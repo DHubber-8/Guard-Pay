@@ -22,6 +22,8 @@ services:
       context: ./backend
     env_file:
       - ./.env
+    environment:
+      DATABASE_URL: postgresql://dispute_helper:dispute_helper@db:5432/dispute_helper
     depends_on:
       db:
         condition: service_healthy

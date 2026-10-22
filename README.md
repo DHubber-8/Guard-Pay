@@ -14,6 +14,8 @@ AI assistant scaffold for helping small merchants resolve PayPal disputes and he
 
 ### Backend
 
+Python 3.12 recommended; avoid pre-release versions.
+
 ```powershell
 cd backend
 python -m venv .venv
@@ -52,6 +54,9 @@ uvicorn app.main:app --reload
 
 The optional containerized backend can be started with `docker compose up backend`.
 The API is available at `http://localhost:8000`.
+
+When the backend runs in Docker, it reaches PostgreSQL at the Compose service
+hostname `db`; direct local runs use `localhost` instead.
 
 ## Deploy to Render
 
