@@ -1,40 +1,43 @@
+# Owner: Digant
+# Status: in progress
 services:
   - type: web
-    name: api
-    runtime: python
+    name: dispute-helper-api
+    runtime: docker
+    plan: free
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
     envVars:
+      - key: ENV
+        value: production
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: dispute-helper-db
+          property: connectionString
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
       - key: PAYPAL_BASE_URL
-        value: https://api-m.sandbox.paypal.com
+        sync: false
+      - key: PAYPAL_REPORT_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
       - key: FRONTEND_ORIGIN
-        value: https://dashboard.onrender.com
+        sync: false
+      - key: CARRIER_API_BASE_URL
+        sync: false
+      - key: ELASTIC_URL
+        sync: false
+      - key: ELASTIC_API_KEY
+        sync: false
 
-  - type: static
-    name: dashboard
-    runtime: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-
-  - type: worker
-    name: delivery-watch
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.workers.delivery_watch
-
-  - type: cron
-    name: deadlines
-    runtime: python
-    rootDir: backend
-    schedule: "*/30 * * * *"
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m app.workers.deadlines
+databases:
+  - name: dispute-helper-db
+    plan: free
+    databaseName: dispute_helper
+    user: dispute_helper
