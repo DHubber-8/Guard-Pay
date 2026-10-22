@@ -8,7 +8,7 @@ Priority: Must / Should / Nice.
 |---|---|---|---|---|---|---|---|---|
 | S1 | Shared | Define findings schema and API contract | schemas/findings.py | none | Must | Proposed | TBD | |
 | S2 | Shared | Define merchant and personal scenario catalog | rules/scenarios.py | none | Must | Proposed | TBD | |
-| A1 | A | Configure PayPal sandbox and order lookup | config.py, paypal/ | none | Must | Proposed | TBD | |
+| A1 | A | Configure PayPal sandbox and order lookup | config.py, paypal/ | none | Must | In progress | Digant | |
 | A2 | A | Add verified webhook receiver | routes/webhooks.py | A1 | Must | Proposed | TBD | |
 | A3 | A | Add dispute API wrapper | paypal/disputes.py | A1 | Must | Proposed | TBD | |
 | A4 | A | Add refund and tracking wrappers | paypal/refunds.py, paypal/tracking.py | A1 | Must | Proposed | TBD | |
