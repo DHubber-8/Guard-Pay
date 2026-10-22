@@ -64,7 +64,8 @@ Create a new Render Blueprint from this repository and use `render.yaml`. Render
 creates the managed PostgreSQL database and supplies `DATABASE_URL` to the API.
 In the API service's Environment dashboard, set the values for `PAYPAL_CLIENT_ID`,
 `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `PAYPAL_BASE_URL`,
-`PAYPAL_REPORT_URL`, `LLM_API_KEY`, `FRONTEND_ORIGIN`, `CARRIER_API_BASE_URL`,
+`PAYPAL_REPORT_URL`, `LLM_API_KEY`, and `FRONTEND_ORIGIN` to the deployed
+frontend URL (plus localhost if needed), along with `CARRIER_API_BASE_URL`,
 `ELASTIC_URL`, and `ELASTIC_API_KEY` as needed. Keep secrets in the Render
 dashboard; do not commit them.
 
