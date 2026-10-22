@@ -1,17 +1,33 @@
-"""Application configuration."""
+"""Application configuration.
 
-import os
-from dataclasses import dataclass
+Owner: Digant
+Status: in progress
+"""
+
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-@dataclass(frozen=True)
-class Settings:
-    # TODO: Add validated environment-backed application settings.
-    database_url: str = os.getenv("DATABASE_URL", "")
-    paypal_client_id: str = os.getenv("PAYPAL_CLIENT_ID", "")
-    paypal_client_secret: str = os.getenv("PAYPAL_CLIENT_SECRET", "")
-    paypal_base_url: str = os.getenv("PAYPAL_BASE_URL", "https://api-m.sandbox.paypal.com")
-    frontend_origin: str = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+class Settings(BaseSettings):
+    """Environment-backed application settings."""
+
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[2] / ".env",
+        extra="ignore",
+    )
+
+    database_url: str = ""
+    paypal_client_id: str = ""
+    paypal_client_secret: str = ""
+    paypal_webhook_id: str = ""
+    paypal_base_url: str = "https://api-m.sandbox.paypal.com"
+    paypal_report_url: str = ""
+    llm_api_key: str = ""
+    frontend_origin: str = ""
+    carrier_api_base_url: str = ""
+    elastic_url: str = ""
+    elastic_api_key: str = ""
 
 
 settings = Settings()
