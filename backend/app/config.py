@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     )
 
     database_url: str = ""
+    env: str = "local"
     paypal_client_id: str = ""
     paypal_client_secret: str = ""
     paypal_webhook_id: str = ""
