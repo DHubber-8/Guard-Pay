@@ -6,7 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import Agreement, Approval, AuditLog, Base, Case, EvidenceItem, Offer, Order
-from app.db.session import LOCAL_SQLITE_FILE, resolve_database_url
+from app.db.session import (
+    LOCAL_SQLITE_FILE,
+    normalize_database_url,
+    resolve_database_url,
+)
 from app.config import Settings
 
 
@@ -88,3 +92,25 @@ def test_empty_database_url_uses_named_sqlite_fallback(caplog: pytest.LogCapture
 def test_production_requires_database_url() -> None:
     with pytest.raises(RuntimeError, match="DATABASE_URL must be set"):
         resolve_database_url(Settings(database_url="", env="production"))
+
+
+def test_normalize_postgres_url() -> None:
+    assert (
+        normalize_database_url("postgres://user:pass@localhost/db")
+        == "postgresql+psycopg://user:pass@localhost/db"
+    )
+
+
+def test_normalize_postgresql_url() -> None:
+    assert (
+        normalize_database_url("postgresql://user:pass@localhost/db")
+        == "postgresql+psycopg://user:pass@localhost/db"
+    )
+
+
+@pytest.mark.parametrize(
+    "database_url",
+    ["postgresql+psycopg://user:pass@localhost/db", "sqlite:///./dispute_helper.db"],
+)
+def test_normalize_other_database_urls_unchanged(database_url: str) -> None:
+    assert normalize_database_url(database_url) == database_url

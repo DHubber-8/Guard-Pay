@@ -5,16 +5,18 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config import settings
 from app.db.models import Base
+from app.db.session import normalize_database_url
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-config.set_main_option("sqlalchemy.url", settings.database_url)
+database_url = normalize_database_url(settings.database_url)
+config.set_main_option("sqlalchemy.url", database_url)
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    url = settings.database_url
+    url = database_url
     context.configure(url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"})
     with context.begin_transaction():
         context.run_migrations()

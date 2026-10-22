@@ -17,10 +17,19 @@ logger = logging.getLogger(__name__)
 LOCAL_SQLITE_FILE = "dispute_helper.db"
 
 
+def normalize_database_url(database_url: str) -> str:
+    """Normalize legacy PostgreSQL URL schemes for psycopg."""
+    if database_url.startswith("postgres://"):
+        return "postgresql+psycopg://" + database_url.removeprefix("postgres://")
+    if database_url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + database_url.removeprefix("postgresql://")
+    return database_url
+
+
 def resolve_database_url(config: Settings) -> str:
     """Return the configured database URL or the safe local-development fallback."""
     if config.database_url:
-        return config.database_url
+        return normalize_database_url(config.database_url)
     if config.env.lower() == "production":
         raise RuntimeError("DATABASE_URL must be set when ENV=production")
 
