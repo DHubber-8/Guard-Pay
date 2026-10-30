@@ -35,7 +35,7 @@ export const cases = [
 export const TYPE_LABEL = { dispute: "Dispute", orderhelp: "Order Help", risk: "Risk alert", delivery: "Delivery" };
 
 export const orderHelpCase = {
-  id: "1051", order: "#1051", buyer: "Maria Gomez", buyerEmail: "maria.g@mail.com",
+  id: "1051", order: "#1051", buyer: "Maria Gomez", buyerEmail: "maria.g@mail.com", total: 40,
   reason: "Damaged item",
   message: "One of the two mugs arrived with a crack on the handle. The other one is fine.",
   history: [
@@ -120,6 +120,7 @@ export const insights = {
 export const scamHistory = [
   { id: "s1", title: "\"Your parcel is on hold\" SMS", when: "2 days ago", risk: "high" },
   { id: "s2", title: "Marketplace buyer asking to pay outside PayPal", when: "Last week", risk: "medium" },
+  { id: "s0", title: "Email: \"Your account will be closed\"", when: "3 weeks ago", risk: "high" },
 ];
 
 export const buyerOrder = {

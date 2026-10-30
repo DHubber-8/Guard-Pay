@@ -1,6 +1,6 @@
 // 09 Order Help case · 10 Formal dispute · 11 Approve confirmation (modal) · 12 Risk alert
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ChevronRight, CircleCheck, CircleHelp, ImageIcon, Sparkles, ShieldAlert, TriangleAlert, Lock } from "lucide-react";
 import { api } from "../../api";
@@ -22,15 +22,26 @@ function Loading() {
 
 /* ---------- 09 + 11 ---------- */
 export function OrderHelpCase() {
-  const { data: c } = useQuery({ queryKey: ["ohcase", "1051"], queryFn: () => api.getOrderHelpCase("1051") });
+  const { id } = useParams();
+  const { data: c } = useQuery({ queryKey: ["ohcase", id], queryFn: () => api.getOrderHelpCase(id) });
   const [offer, setOffer] = useState("partial");
   const [confirm, setConfirm] = useState(false);
   const [done, setDone] = useState(false);
   const [ownReply, setOwnReply] = useState(false);
   const [toast, showToast] = useToast();
-  const approve = useMutation({ mutationFn: () => api.approveOffer("1051", offer), onSuccess: () => { setConfirm(false); setDone(true); showToast("Refund sent · the buyer has been emailed"); } });
+  const approve = useMutation({
+    mutationFn: () => api.approveOffer(id, offer),
+    onSuccess: (res) => {
+      setConfirm(false);
+      // Only call it sent when the backend says the refund went out
+      if (res?.sent) { setDone(true); showToast("Refund sent · the buyer has been emailed"); }
+      else showToast("Approval saved · the refund hasn't been sent yet");
+    },
+    onError: () => showToast("Couldn't approve · nothing was sent, try again"),
+  });
   if (!c) return <Loading />;
-  const chosen = c.offers.find((o) => o.id === offer);
+  const chosen = c.offers.find((o) => o.id === offer) ?? c.offers.find((o) => o.recommended) ?? c.offers[0];
+  const first = c.buyer.split(" ")[0];
   return (
     <div className="stack gap-24">
       <Head crumb={`Order ${c.order}`} title={`Item arrived damaged · ${c.order}`} badges={<><Badge level="info">Order Help</Badge>{done ? <Badge level="low">Refund sent</Badge> : <Badge level="medium">Waiting for you</Badge>}</>} />
@@ -62,15 +73,15 @@ export function OrderHelpCase() {
           <Card>
             <h2 className="h3">Suggested offer</h2>
             {c.offers.map((o) => (
-              <RadioCard key={o.id} selected={offer === o.id} onClick={() => setOffer(o.id)} title={o.title} sub={o.sub}
+              <RadioCard key={o.id} selected={chosen?.id === o.id} onClick={() => setOffer(o.id)} title={o.title} sub={o.sub}
                 right={o.recommended && <Badge level="info">AI pick</Badge>} />
             ))}
-            <Button block disabled={done} onClick={() => setConfirm(true)}>{done ? "Approved" : "Approve and send"}</Button>
+            <Button block disabled={done || !chosen} onClick={() => setConfirm(true)}>{done ? "Approved" : "Approve and send"}</Button>
             <Button kind="ghost" block onClick={() => setOwnReply(!ownReply)}>{ownReply ? "Hide my reply" : "Write my own reply"}</Button>
             {ownReply && (
               <>
-                <Textarea label="Your message to Maria" rows={4} defaultValue="Hi Maria, so sorry about the cracked mug! " />
-                <Button kind="secondary" block onClick={() => { setOwnReply(false); showToast("Message sent to Maria"); }}>Send message</Button>
+                <Textarea label={`Your message to ${first}`} rows={4} defaultValue={`Hi ${first}, so sorry about the trouble with your order! `} />
+                <Button kind="secondary" block onClick={() => { setOwnReply(false); showToast(`Message sent to ${first}`); }}>Send message</Button>
               </>
             )}
           </Card>
@@ -80,10 +91,10 @@ export function OrderHelpCase() {
 
       {confirm && (
         <Modal onClose={() => setConfirm(false)}>
-          <h2 className="h2">{chosen.amount ? `Refund $${chosen.amount} to Maria via PayPal?` : "Send a replacement to Maria?"}</h2>
-          <p className="text-2">{chosen.amount ? "The money goes back to the buyer's original payment method. This can't be undone." : "We'll email Maria that a new mug is on its way."}</p>
+          <h2 className="h2">{chosen.amount ? `Refund $${chosen.amount} to ${first} via PayPal?` : `Send a replacement to ${first}?`}</h2>
+          <p className="text-2">{chosen.amount ? "The money goes back to the buyer's original payment method. This can't be undone." : `We'll email ${first} that a replacement is on its way.`}</p>
           <div className="card soft tight">
-            <KV rows={[["Order", "#1051"], ["Refund", chosen.amount ? `$${chosen.amount.toFixed(2)} of $40.00` : "None"], ["Message to buyer", "Included"]]} />
+            <KV rows={[["Order", c.order], ["Refund", chosen.amount ? `$${chosen.amount.toFixed(2)}${c.total ? ` of $${c.total.toFixed(2)}` : ""}` : "None"], ["Message to buyer", "Included"]]} />
           </div>
           <div className="row gap-12 end">
             <Button kind="secondary" onClick={() => setConfirm(false)}>Cancel</Button>
@@ -98,7 +109,8 @@ export function OrderHelpCase() {
 
 /* ---------- 10 ---------- */
 export function DisputeCase() {
-  const { data: d } = useQuery({ queryKey: ["dispute"], queryFn: () => api.getDispute("PP-D-27891") });
+  const { id } = useParams();
+  const { data: d } = useQuery({ queryKey: ["dispute", id], queryFn: () => api.getDispute(id) });
   const [mode, setMode] = useState("contest");
   const [sent, setSent] = useState(false);
   const [photo, setPhoto] = useState(false);
@@ -160,7 +172,8 @@ export function DisputeCase() {
 
 /* ---------- 12 ---------- */
 export function RiskAlert() {
-  const { data: r } = useQuery({ queryKey: ["risk"], queryFn: () => api.getRiskCase("1066") });
+  const { id } = useParams();
+  const { data: r } = useQuery({ queryKey: ["risk", id], queryFn: () => api.getRiskCase(id) });
   const [act, setAct] = useState("sign");
   const [done, setDone] = useState(false);
   const [toast, showToast] = useToast();
@@ -183,7 +196,7 @@ export function RiskAlert() {
         <Card>
           <h2 className="h3">Choose an action</h2>
           {r.actions.map((a) => <RadioCard key={a.id} selected={act === a.id} onClick={() => setAct(a.id)} title={a.title} sub={a.sub} />)}
-          <Button block onClick={() => { setDone(true); showToast(act === "cancel" ? "Order cancelled · $540.00 refunded" : act === "confirm" ? "Email sent to Anna to confirm the address" : "Saved · ship with signature, we'll watch this delivery"); }} disabled={done}>{done ? "Done" : "Confirm action"}</Button>
+          <Button block onClick={() => { setDone(true); showToast(act === "cancel" ? `Order cancelled · $${r.total.toFixed(2)} refunded` : act === "confirm" ? `Email sent to ${r.buyer} to confirm the address` : "Saved · ship with signature, we'll watch this delivery"); }} disabled={done}>{done ? "Done" : "Confirm action"}</Button>
           <p className="small muted">The AI never cancels an order on its own. You decide.</p>
         </Card>
       </div>
