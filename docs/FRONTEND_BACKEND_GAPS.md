@@ -6,6 +6,20 @@ what the backend still needs so the screens can run on real data. Task IDs refer
 `docs/TASKS.md`. The frontend calls everything through `frontend/src/api/index.js`;
 set `VITE_USE_MOCK=false` in `frontend/.env` to switch to the backend.
 
+**Building the endpoints below is not enough on its own for every screen.** These
+parts still read demo data directly and need a small frontend change once the
+endpoint exists:
+- `pages/orderhelp/OrderHelp.jsx`: the seller's offer screen (amount and message are
+  fixed text; needs `GET /order-help/{id}`), the waiting screen's reply-due time, and
+  the instant-answer wording, which is written in the frontend from the reason.
+  Finding the order, sending the request and accepting the offer already go through
+  the API (`/order-help/lookup`, `POST /order-help`, `/order-help/{id}/accept`).
+- `pages/individual/Individual.jsx`: the "Order Help requests" rows for a signed-in
+  buyer (no endpoint planned yet). Scam Check history already uses `GET /personal/checks`.
+- `pages/scam/ScamCheck.jsx`: the follow-up questions and the result are a fixed
+  sample (labelled "Sample result" in mock mode); they need the responses from
+  `POST /personal/checks` and `/answers`.
+
 Checked against `main` at `5525769` (plus `feat/a2-webhooks`). Updated 30 Oct 2026 after the UI review.
 
 ## What already lines up
