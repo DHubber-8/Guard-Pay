@@ -58,6 +58,22 @@ The API is available at `http://localhost:8000`.
 When the backend runs in Docker, it reaches PostgreSQL at the Compose service
 hostname `db`; direct local runs use `localhost` instead.
 
+To send a sample event to the local webhook endpoint from PowerShell:
+
+```powershell
+$event = @{
+  id = "WH-SAMPLE-1"
+  event_type = "CUSTOMER.DISPUTE.CREATED"
+  resource = @{ dispute_id = "PP-DISPUTE-SAMPLE-1"; status = "OPEN" }
+} | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/webhooks/paypal `
+  -ContentType "application/json" -Body $event
+```
+
+Hand-made requests do not contain a real PayPal signature, so strict signature
+verification will reject this sample. A real end-to-end test requires an actual
+PayPal sandbox dispute and the corresponding configured webhook.
+
 ## Deploy to Render
 
 Create a new Render Blueprint from this repository and use `render.yaml`. Render
