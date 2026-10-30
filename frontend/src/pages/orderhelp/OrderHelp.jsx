@@ -1,10 +1,22 @@
 // 25 Demo store page · 26–32 Order Help for buyers (no login needed)
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft, CircleHelp, Check, Package, Clock, CircleCheck, Sparkles, ShoppingBag, MessageSquare } from "lucide-react";
 import { OrderHelp } from "../../layouts/layouts";
 import { Button, Card, Badge, Input, Textarea, Notice, RadioCard, KV, IconList, PhotoPicker } from "../../components/ui";
-import { buyerOrder as o } from "../../mock/data";
+import { api } from "../../api";
+import { USE_MOCK } from "../../config";
+import { buyerOrder as demoOrder } from "../../mock/data";
+
+// The order found on step 1 travels with the buyer between screens. Opening a
+// later screen directly (e.g. from /screens) falls back to the demo order in
+// mock mode only.
+const BASE = "/help/diana-richella";
+function useOrder() {
+  const { state } = useLocation();
+  return state?.order ?? (USE_MOCK ? demoOrder : null);
+}
 import wave from "../../assets/art/wave.webp";
 
 /* ---------- 25 Demo store with the Order help widget ---------- */
@@ -48,12 +60,21 @@ export function DemoStore() {
 /* ---------- 26 ---------- */
 export function FindOrder() {
   const nav = useNavigate();
+  const [orderNo, setOrderNo] = useState("#1032");
+  const [email, setEmail] = useState("ahmed.k@mail.com");
+  // Only show the order once the number and email match (backend: POST /order-help/lookup)
+  const find = useMutation({
+    mutationFn: () => api.lookupOrder({ order_number: orderNo.trim(), email: email.trim() }),
+    onSuccess: (order) => nav(`${BASE}/problem`, { state: { order: { ...order, email: email.trim() } } }),
+  });
+  const ready = orderNo.trim() && email.includes("@");
   return (
-    <OrderHelp step="1/3" footer={<Button block onClick={() => nav("/help/diana-richella/problem")}>Find my order</Button>}>
+    <OrderHelp step="1/3" footer={<Button block disabled={!ready || find.isPending} onClick={() => find.mutate()}>{find.isPending ? "Looking…" : "Find my order"}</Button>}>
       <h1 className="h2">Let's find your order</h1>
       <p className="text-2">No account needed. Use the details from your order email.</p>
-      <Input label="Order number" placeholder="#1032" defaultValue="#1032" />
-      <Input label="Email used at checkout" type="email" placeholder="you@email.com" defaultValue="ahmed.k@mail.com" />
+      <Input label="Order number" placeholder="#1032" value={orderNo} onChange={(e) => { setOrderNo(e.target.value); find.reset(); }} />
+      <Input label="Email used at checkout" type="email" placeholder="you@email.com" value={email} onChange={(e) => { setEmail(e.target.value); find.reset(); }} />
+      {find.isError && <Notice icon={CircleHelp} tone="warm">We couldn't find that order. Check the order number and the email you used at checkout.</Notice>}
       <Notice>Using Order Help doesn't affect your PayPal Buyer Protection. You can still go to PayPal any time.</Notice>
     </OrderHelp>
   );
@@ -72,15 +93,31 @@ const NOT_ARRIVED = [
   ["notracking", "I don't have any tracking", "We'll look up the tracking for you"],
 ];
 
+const REASON_CODE = ["not_arrived", "damaged", "not_as_described", "cancel", "other"];
+
 export function Problem() {
   const nav = useNavigate();
+  const o = useOrder();
   const [r, setR] = useState(REASONS[0]);
   const [why, setWhy] = useState("customs");
-  // Questions the tracking data can answer get an instant answer; the rest go to the seller
-  const instant = r === REASONS[0] && ["customs", "late", "stuck", "notracking"].includes(why);
-  const next = instant ? "/help/diana-richella/answer" : "/help/diana-richella/waiting";
+  const [note, setNote] = useState("");
+  const [photos, setPhotos] = useState([]);
+  // Send the request first; the response decides between an instant answer and the seller
+  const submit = useMutation({
+    mutationFn: () => api.createOrderHelp({
+      order_number: o.order, email: o.email, reason: REASON_CODE[REASONS.indexOf(r)],
+      not_arrived_reason: r === REASONS[0] ? why : undefined, note, photos,
+    }),
+    onSuccess: (res) => res.type === "answer"
+      ? nav(`${BASE}/answer?why=${res.kind || why}`, { state: { order: o, answer: res } })
+      : nav(`${BASE}/waiting`, { state: { order: o, request: res } }),
+  });
+  if (!o) return <NoOrder />;
   return (
-    <OrderHelp step="2/3" footer={<Button block onClick={() => nav(next)}>Continue</Button>}>
+    <OrderHelp step="2/3" footer={<>
+      {submit.isError && <Notice icon={CircleHelp} tone="warm">We couldn't send your request. Please try again.</Notice>}
+      <Button block disabled={submit.isPending} onClick={() => submit.mutate()}>{submit.isPending ? "Sending…" : "Continue"}</Button>
+    </>}>
       <Card className="tight" style={{ flexDirection: "row", alignItems: "center" }}>
         <span className="icon-bubble"><Package size={20} /></span>
         <div className="grow stack"><span className="body-strong">{o.item} · {o.order}</span><span className="small muted">Paid {o.paid} · Shipped with {o.carrier}</span></div>
@@ -95,24 +132,46 @@ export function Problem() {
           ))}
         </Card>
       )}
-      <Textarea label="Tell us more (optional)" placeholder="Tracking says delivered but…" rows={3} />
-      <PhotoPicker />
+      <Textarea label="Tell us more (optional)" placeholder="Tracking says delivered but…" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
+      <PhotoPicker onChange={setPhotos} />
     </OrderHelp>
   );
 }
 
 /* ---------- 28 ---------- */
+// Answers built from the tracking data, one per "hasn't arrived" reason
+const ANSWERS = {
+  customs: ["Good news: your parcel is on its way", (o) => `It's held at customs, which is normal for international orders. ${o.carrier} expects it to be released in about 2 days.`],
+  stuck: ["Your parcel is waiting at customs", (o) => `Tracking hasn't moved because the last scan was at customs. Parcels often show no updates while customs checks them. ${o.carrier} expects it to move again in about 2 days.`],
+  late: ["It's late, but still on its way", (o) => `The customs check added a few days. ${o.carrier}'s new estimate is about 2 days from now.`],
+  notracking: ["Here's your tracking", (o) => `Your order shipped with ${o.carrier}. The tracking number and the latest updates are below.`],
+};
+
+function NoOrder() {
+  return (
+    <OrderHelp footer={<Button block to={BASE}>Find my order</Button>}>
+      <h1 className="h2">Let's find your order first</h1>
+      <p className="text-2">We need your order number and email before we can help.</p>
+    </OrderHelp>
+  );
+}
+
 export function InstantAnswer() {
   const nav = useNavigate();
+  const o = useOrder();
+  const [params] = useSearchParams();
+  if (!o) return <NoOrder />;
+  const [title, text] = ANSWERS[params.get("why")] || ANSWERS.customs;
+  const go = (path) => nav(path, { state: { order: o } });
   return (
     <OrderHelp step="3/3" footer={<>
       <span className="body-strong">Did this solve it?</span>
-      <Button block onClick={() => nav("/help/diana-richella/resolved?type=answer")}>Yes, problem solved</Button>
-      <Button block kind="secondary" onClick={() => nav("/help/diana-richella/waiting")}>No, still a problem</Button>
+      <Button block onClick={() => go(`${BASE}/resolved?type=answer`)}>Yes, problem solved</Button>
+      <Button block kind="secondary" onClick={() => go(`${BASE}/waiting`)}>No, still a problem</Button>
     </>}>
       <Badge level="info"><Sparkles size={12} />Answered instantly</Badge>
-      <h1 className="h2">Good news: your parcel is on its way</h1>
-      <p className="text-2">It's held at customs in Singapore, which is normal for international orders. It should be released in about 2 days.</p>
+      <h1 className="h2">{title}</h1>
+      <p className="text-2">{text(o)}</p>
       <Card>
         <span className="label muted">{o.carrier} · {o.tracking}</span>
         {o.tracking_steps.map((s) => (
@@ -129,8 +188,10 @@ export function InstantAnswer() {
 
 /* ---------- 29 ---------- */
 export function Waiting() {
+  const nav = useNavigate();
+  const o = useOrder();
   return (
-    <OrderHelp footer={<Button block kind="secondary" to="/help/diana-richella/offer">See the seller's reply</Button>}>
+    <OrderHelp footer={<Button block kind="secondary" onClick={() => nav(`${BASE}/offer`, { state: { order: o } })}>See the seller's reply</Button>}>
       <div style={{ display: "grid", placeItems: "center", padding: "16px 0" }}><span className="icon-bubble lg" style={{ width: 88, height: 88, borderRadius: 28 }}><Clock size={40} /></span></div>
       <h1 className="h2 center">We've sent your request to Diana Richella</h1>
       <p className="text-2 center">The seller usually replies within 24 hours. We'll email you at a***@mail.com.</p>
@@ -148,12 +209,19 @@ export function Waiting() {
 /* ---------- 30 ---------- */
 export function Offer() {
   const nav = useNavigate();
+  const o = useOrder();
   const [msg, setMsg] = useState(false);
   const [sentMsg, setSentMsg] = useState(false);
+  // Record the acceptance first (backend: POST /order-help/{id}/accept), then show Resolved
+  const accept = useMutation({
+    mutationFn: () => api.acceptOffer(o?.order),
+    onSuccess: () => nav(`${BASE}/resolved`, { state: { order: o } }),
+  });
   return (
     <OrderHelp footer={<>
-      <Button block onClick={() => nav("/help/diana-richella/resolved")}>Accept offer</Button>
-      <Button block kind="secondary" onClick={() => nav("/help/diana-richella/paypal")}>Decline</Button>
+      {accept.isError && <Notice icon={CircleHelp} tone="warm">We couldn't accept the offer. Nothing was changed, please try again.</Notice>}
+      <Button block disabled={accept.isPending} onClick={() => accept.mutate()}>{accept.isPending ? "Accepting…" : "Accept offer"}</Button>
+      <Button block kind="secondary" onClick={() => nav(`${BASE}/paypal`, { state: { order: o } })}>Decline</Button>
       <Button block kind="ghost" onClick={() => setMsg(!msg)}><MessageSquare size={16} />Message the seller</Button>
       <p className="small muted center">Declining won't affect your rights. You can still go to PayPal.</p>
     </>}>
@@ -181,6 +249,7 @@ export function Offer() {
 
 /* ---------- 31 ---------- */
 export function Resolved() {
+  const o = useOrder() ?? demoOrder;
   const answer = new URLSearchParams(location.search).get("type") === "answer";
   return (
     <OrderHelp footer={<Button block kind="secondary" to="/store">Back to the store</Button>}>
@@ -195,6 +264,7 @@ export function Resolved() {
 
 /* ---------- 32 ---------- */
 export function PayPalGuide() {
+  const o = useOrder() ?? demoOrder;
   return (
     <OrderHelp footer={<Button block onClick={() => window.open("https://www.paypal.com/resolutioncenter", "_blank")}>Open PayPal Resolution Center</Button>}>
       <h1 className="h2">Get help from PayPal</h1>
