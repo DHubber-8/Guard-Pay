@@ -1,0 +1,64 @@
+/* ============================================================
+   Design tokens. Change colours and fonts here and the whole
+   app follows. Names match the Figma styles (WF/...).
+   ============================================================ */
+:root {
+  /* Brand */
+  --navy-900: #14232e;   /* main text */
+  --navy-700: #1f3b4d;   /* primary: buttons, active nav */
+  --navy-600: #2a4c62;   /* primary hover */
+  --steel-500: #4f7a94;  /* secondary blue */
+  --mist-200: #dde8ee;   /* light blue highlight */
+  --mist-50: #eef4f7;
+  --terracotta-500: #d9826a; /* warm accent (decoration only) */
+  --terracotta-700: #964f3c; /* warm accent safe for text */
+  --peach-200: #f2cdb8;
+  --peach-50: #fbefe7;
+  --cream-100: #f4f7f9;  /* app background (cool light grey-blue) */
+  --cream-200: #e8eef2;
+  --white: #ffffff;
+  --gold-500: #c4a052;   /* tiny details only, never text */
+
+  /* Neutrals */
+  --text: var(--navy-900);
+  --text-2: #3b4a55;
+  --muted: #5f6c75;
+  --line: #e0e7ec;
+  --line-strong: #c6d1d9;
+
+  /* Status (kept separate from terracotta on purpose) */
+  --ok: #276b4d;      --ok-bg: #e3f1ea;
+  --warn: #8f6200;    --warn-bg: #fbf0d4;
+  --danger: #b3261e;  --danger-bg: #fbe5e2;
+  --neutral-bg: #e9eef1;
+
+  /* Type */
+  --font-display: "Lil Grotesk", "Inter", system-ui, sans-serif; /* headings, nav, buttons */
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-display: 56px; --lh-display: 64px;
+  --fs-h1: 36px;      --lh-h1: 44px;
+  --fs-h2: 28px;      --lh-h2: 36px;
+  --fs-h3: 20px;      --lh-h3: 28px;
+  --fs-body: 16px;    --lh-body: 24px;
+  --fs-small: 14px;   --lh-small: 20px;
+  --fs-caption: 12px; --lh-caption: 16px;
+
+  /* Shape */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(20, 35, 46, 0.06);
+  --shadow-md: 0 6px 24px rgba(20, 35, 46, 0.08);
+  --shadow-lg: 0 18px 50px rgba(20, 35, 46, 0.18);
+
+  /* Layout */
+  --page-max: 1344px;
+  --gutter: 48px;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --fs-display: 38px; --lh-display: 44px;
+    --fs-h1: 28px; --lh-h1: 36px;
+    --fs-h2: 24px; --lh-h2: 32px;
+    --gutter: 16px;
+  }
+}

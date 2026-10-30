@@ -26,11 +26,11 @@ Priority: Must / Should / Nice.
 | B7 | B | Draft dispute responses | agents/drafter.py | S1 | Must | Proposed | TBD | |
 | B8 | B | Wire the shared pipeline | pipeline.py | B1, B3, B4, B5 | Must | Proposed | TBD | |
 | B9 | B | Add optional similar-case search | search/ | A5 | Nice | Proposed | TBD | |
-| C1 | C | Add app shell, routing, API client, and home | frontend/src | S1 | Must | Proposed | TBD | |
-| C2 | C | Add buyer Order Help screens | buyer/ | C1 | Must | Proposed | TBD | |
-| C3 | C | Add merchant inbox | merchant/inbox/ | C1 | Must | Proposed | TBD | |
-| C4 | C | Add case view and findings panel | merchant/case/, shared/ | S1, C1 | Must | Proposed | TBD | |
-| C5 | C | Add personal mode screens | personal/ | C1, S1 | Should | Proposed | TBD | |
-| C6 | C | Add merchant setup screen | merchant/setup/ | C1 | Nice | Proposed | TBD | |
+| C1 | C | Add app shell, routing, API client, and home | frontend/src (App.jsx, api/, layouts/, components/, styles/) | S1 | Must | In review | Diana | |
+| C2 | C | Add buyer Order Help screens | pages/orderhelp/ | C1 | Must | In review | Diana | |
+| C3 | C | Add merchant inbox | pages/merchant/Inbox.jsx | C1 | Must | In review | Diana | |
+| C4 | C | Add case view and findings panel | pages/merchant/Cases.jsx, components/FindingsPanel.jsx | S1, C1 | Must | In review | Diana | |
+| C5 | C | Add personal mode screens | pages/individual/, pages/scam/ | C1, S1 | Should | In review | Diana | |
+| C6 | C | Add merchant setup screen | pages/onboarding/, pages/merchant/More.jsx | C1 | Nice | In review | Diana | |
 | P1 | P | Add Postman collections and environment | postman/ | A1 | Should | Proposed | TBD | |
 | D1 | D | Add rules, README, and demo docs | docs/ | none | Should | Proposed | TBD | |
