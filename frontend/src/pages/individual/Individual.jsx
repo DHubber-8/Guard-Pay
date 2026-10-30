@@ -5,7 +5,19 @@ import { setRole } from "../../session";
 import { ShieldCheck, ChevronRight, History, Trash2, User } from "lucide-react";
 import { Mobile } from "../../layouts/layouts";
 import { Button, Card, Badge, RiskBadge, Input, Notice, useToast } from "../../components/ui";
-import { scamHistory } from "../../mock/data";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../api";
+
+// Scam Checks come from the API (GET /personal/checks). Order Help requests for
+// a signed-in buyer have no backend endpoint yet, so they are still demo rows.
+const DEMO_ORDER_HELP = [
+  { id: "o1", title: "Diana Richella · #1032", when: "Waiting for the seller", kind: "Order Help", to: "/help/diana-richella/waiting", badge: ["info", "Open"] },
+  { id: "o0", title: "Diana Richella · #0988", when: "Solved · partial refund $14", kind: "Order Help", to: "/help/diana-richella/resolved", badge: ["low", "Solved"] },
+];
+function useScamHistory() {
+  const { data = [] } = useQuery({ queryKey: ["scam-history"], queryFn: api.getScamHistory });
+  return data.map((s) => ({ ...s, when: s.when ?? s.date, kind: "Scam Check", to: "/scam-check/result" }));
+}
 import ink from "../../assets/art/ink.webp";
 
 function Row({ to, onClick, title, sub, right }) {
@@ -17,6 +29,7 @@ function Row({ to, onClick, title, sub, right }) {
 }
 
 export function IndividualHome() {
+  const scamHistory = useScamHistory().slice(0, 2);
   useEffect(() => setRole("individual"), []); // demo: opening this counts as signed in
   return (
     <Mobile title="Hi, Maya" back={false} tabs wide>
@@ -49,16 +62,10 @@ export function IndividualHome() {
   );
 }
 
-const HISTORY = [
-  ...scamHistory.map((s) => ({ ...s, kind: "Scam Check", to: "/scam-check/result" })),
-  { id: "s0", title: "Email: \"Your account will be closed\"", when: "3 weeks ago", risk: "high", kind: "Scam Check", to: "/scam-check/result" },
-  { id: "o1", title: "Diana Richella · #1032", when: "Waiting for the seller", kind: "Order Help", to: "/help/diana-richella/waiting", badge: ["info", "Open"] },
-  { id: "o0", title: "Diana Richella · #0988", when: "Solved · partial refund $14", kind: "Order Help", to: "/help/diana-richella/resolved", badge: ["low", "Solved"] },
-];
-
 export function IndividualHistory() {
   const [filter, setFilter] = useState("All");
-  const items = HISTORY.filter((h) => filter === "All" || h.kind === filter);
+  const history = [...useScamHistory(), ...DEMO_ORDER_HELP];
+  const items = history.filter((h) => filter === "All" || h.kind === filter);
   return (
     <Mobile title="My check history" wide>
       <Card className="tight ind-section">

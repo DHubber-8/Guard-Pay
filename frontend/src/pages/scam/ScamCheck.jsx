@@ -5,6 +5,13 @@ import { Check, TriangleAlert, ShieldCheck, Loader, CircleCheck, Search } from "
 import { Mobile } from "../../layouts/layouts";
 import { Button, Card, Badge, RiskBadge, Textarea, Input, PhotoPicker, Notice, IconList, RadioCard, Toast } from "../../components/ui";
 import { homePath } from "../../session";
+import { api } from "../../api";
+import { USE_MOCK } from "../../config";
+
+// The id of the check being worked on, so the decision is saved to the right one
+const CHECK_KEY = "scamCheckId";
+const saveId = (id) => { try { sessionStorage.setItem(CHECK_KEY, id); } catch { /* storage blocked */ } };
+const loadId = () => { try { return sessionStorage.getItem(CHECK_KEY) || "latest"; } catch { return "latest"; } };
 import pastel from "../../assets/art/pastel.webp";
 
 export function ScamIntro() {
@@ -26,14 +33,29 @@ export function ScamIntro() {
 export function ScamDescribe() {
   const nav = useNavigate();
   const [text, setText] = useState("");
+  const [link, setLink] = useState("");
+  const [shots, setShots] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const check = async () => {
+    setBusy(true); setFailed(false);
+    try {
+      const res = await api.submitScamCheck({ description: text, link_or_sender: link, screenshots: shots });
+      saveId(res.id);
+      nav("/scam-check/analyzing");
+    } catch { setFailed(true); setBusy(false); }
+  };
   return (
-    <Mobile title="New check" footer={<Button block disabled={text.trim().length < 5} onClick={() => nav("/scam-check/analyzing")}>Check it</Button>}>
+    <Mobile title="New check" footer={<>
+      {failed && <Notice icon={TriangleAlert} tone="warm">We couldn't start the check. Please try again.</Notice>}
+      <Button block disabled={text.trim().length < 5 || busy} onClick={check}>{busy ? "Sending…" : "Check it"}</Button>
+    </>}>
       <span className="caption muted">Step 1 of 2</span>
       <h1 className="h2">What happened?</h1>
       <Textarea label="Describe it in your own words" value={text} onChange={(e) => setText(e.target.value)} rows={4}
         placeholder="e.g. Someone on Instagram says I won a prize and needs $20 for shipping…" />
-      <Input label="Link or sender (optional)" placeholder="https:// or email / phone number" />
-      <PhotoPicker label="Add screenshots (optional)" hint="Up to 5. Hide passwords and codes first." />
+      <Input label="Link or sender (optional)" placeholder="https:// or email / phone number" value={link} onChange={(e) => setLink(e.target.value)} />
+      <PhotoPicker label="Add screenshots (optional)" hint="Up to 5. Hide passwords and codes first." onChange={setShots} />
       {text.trim().length < 5 && <p className="small muted">Write a few words about what happened to continue.</p>}
     </Mobile>
   );
@@ -116,6 +138,7 @@ export function ScamQuestions() {
 export function ScamResult() {
   return (
     <Mobile title="Result" footer={<Button block to="/scam-check/decision">Next: your decision</Button>}>
+      {USE_MOCK && <Notice>Sample result. Until the AI is connected, every check shows this example instead of an analysis of what you entered.</Notice>}
       <Card style={{ borderTop: "4px solid var(--danger)" }}>
         <div className="row gap-12 wrap"><RiskBadge level="high" /><Badge level="medium">Evidence: partial</Badge></div>
         <h1 className="h2">This has the signs of a prize scam</h1>
@@ -129,18 +152,44 @@ export function ScamResult() {
   );
 }
 
+const DONE_TEXT = {
+  resolved: "Marked as resolved · saved to your Scam Check history",
+  monitor: "We'll remind you in 7 days · saved to your history",
+  report: "PayPal opened in a new tab · saved to your history",
+};
+
 export function ScamDecision() {
   const nav = useNavigate();
   const [pick, setPick] = useState("resolved");
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // Save the chosen decision first; only then show the confirmation
+  const confirm = async () => {
+    setBusy(true); setFailed(false);
+    // Open the tab inside the click so the browser doesn't block it
+    const tab = pick === "report" ? window.open("https://www.paypal.com/resolutioncenter", "_blank", "noopener") : null;
+    try {
+      await api.saveScamDecision(loadId(), pick);
+      setDone(true);
+      setTimeout(() => nav(homePath(), { replace: true }), 1600);
+    } catch {
+      tab?.close?.();
+      setFailed(true);
+      setBusy(false);
+    }
+  };
   return (
-    <Mobile title="What next?" footer={<Button block onClick={() => { setDone(true); setTimeout(() => nav(homePath(), { replace: true }), 1200); }}>Confirm</Button>}>
+    <Mobile title="What next?" footer={<>
+      {failed && <Notice icon={TriangleAlert} tone="warm">We couldn't save your choice. Please try again.</Notice>}
+      <Button block disabled={busy || done} onClick={confirm}>{busy && !done ? "Saving…" : "Confirm"}</Button>
+    </>}>
       <h1 className="h2">What do you want to do?</h1>
       <RadioCard selected={pick === "resolved"} onClick={() => setPick("resolved")} title="Mark as resolved" sub="I didn't pay and I've blocked them" />
       <RadioCard selected={pick === "monitor"} onClick={() => setPick("monitor")} title="Keep monitoring" sub="Remind me to check my PayPal activity in 7 days" />
       <RadioCard selected={pick === "report"} onClick={() => setPick("report")} title="Report to PayPal" sub="Opens PayPal's Resolution Center (needed if you paid)" />
       <Notice>Reporting to PayPal is always your choice. We never contact PayPal for you.</Notice>
-      {done && <Toast>Saved to your Scam Check history</Toast>}
+      {done && <Toast>{DONE_TEXT[pick]}</Toast>}
     </Mobile>
   );
 }
