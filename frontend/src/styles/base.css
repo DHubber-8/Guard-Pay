@@ -601,3 +601,7 @@ html, body { overflow-x: clip; }
 .route-anim { animation-fill-mode: backwards !important; }
 .app-bg, .mobile-shell, .has-backdrop { display: flow-root; }
 .has-backdrop { min-height: 100vh; }
+
+/* Keyboard focus for selectable cards and the dialog */
+.card[role="radio"]:focus-visible { outline: 2px solid var(--navy-700); outline-offset: 2px; }
+.modal:focus { outline: none; }

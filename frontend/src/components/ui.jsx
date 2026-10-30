@@ -74,10 +74,23 @@ export function Toggle({ on, onChange, label }) {
   );
 }
 
-/** Selectable card with a radio dot (used for options and reasons). */
+/** Selectable card with a radio dot (used for options and reasons).
+ *  Keyboard: Tab to reach it, Space/Enter to pick, arrow keys move between the
+ *  cards that sit next to each other (like a native radio group). */
 export function RadioCard({ selected, onClick, title, sub, tight = true, right }) {
+  const onKeyDown = (e) => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); onClick?.(); return; }
+    const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const group = [...e.currentTarget.parentElement.querySelectorAll(":scope > [role=radio]")];
+    const next = group[(group.indexOf(e.currentTarget) + step + group.length) % group.length];
+    next?.focus();
+    next?.click();
+  };
   return (
-    <div className={`card clickable ${tight ? "tight" : ""} ${selected ? "selected" : ""}`} onClick={onClick} role="radio" aria-checked={selected}>
+    <div className={`card clickable ${tight ? "tight" : ""} ${selected ? "selected" : ""}`} onClick={onClick} onKeyDown={onKeyDown}
+      role="radio" aria-checked={!!selected} tabIndex={0}>
       <div className="option">
         <span className="radio-dot" />
         <div className="grow stack gap-4">
@@ -103,8 +116,11 @@ export function UploadBox({ title = "Upload files", hint = "PNG, JPG or PDF · u
 }
 
 /** Upload from the device or take a photo with the camera (phones open the camera directly). */
-export function PhotoPicker({ label = "Add proof (optional)", hint = "Photos of the parcel, item or messages help the seller decide faster." }) {
+export function PhotoPicker({ label = "Add proof (optional)", hint = "Photos of the parcel, item or messages help the seller decide faster.", onChange }) {
   const [files, setFiles] = useState([]);
+  const change = useRef(onChange);
+  change.current = onChange;
+  useEffect(() => { change.current?.(files.map((f) => f.name)); }, [files]);
   const add = (e) => {
     const list = [...e.target.files].map((f) => ({ name: f.name, url: URL.createObjectURL(f) }));
     setFiles((old) => [...old, ...list].slice(0, 5));
@@ -154,16 +170,35 @@ export function KV({ rows }) {
   );
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({ onClose, children }) {
+  const box = useRef(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  // Focus moves into the dialog, Tab stays inside it, and focus goes back to
+  // the button that opened it when it closes.
   useEffect(() => {
-    const esc = (e) => e.key === "Escape" && onClose?.();
-    window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
-  }, [onClose]);
+    const opener = document.activeElement;
+    const items = () => [...(box.current?.querySelectorAll(FOCUSABLE) || [])];
+    (items()[0] || box.current)?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { close.current?.(); return; }
+      if (e.key !== "Tab") return;
+      const list = items();
+      if (!list.length) { e.preventDefault(); return; }
+      const first = list[0], last = list[list.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!box.current.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); opener?.focus?.(); };
+  }, []);
   // Rendered at the end of <body> so no background or panel can cover it
   return createPortal(
     <div className="overlay" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>{children}</div>
+      <div ref={box} tabIndex={-1} className="modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>,
     document.body
   );
