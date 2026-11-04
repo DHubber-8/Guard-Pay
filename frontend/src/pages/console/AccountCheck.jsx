@@ -16,7 +16,7 @@ export default function AccountCheck() {
   const q = params.get("q") || "";
   const [input, setInput] = useState(q);
   useEffect(() => setInput(q), [q]);
-  const { data, isFetching, isError } = useQuery({ queryKey: ["check", q], queryFn: () => api.checkAccount(q), enabled: !!q, retry: false });
+  const { data, isFetching, isError, error } = useQuery({ queryKey: ["check", q], queryFn: () => api.checkAccount(q), enabled: !!q, retry: false });
   const run = (v) => { const s = v.trim(); if (s) setParams({ q: s }); };
 
   return (
@@ -43,8 +43,17 @@ export default function AccountCheck() {
       {q && isFetching && <><Skeleton h={120} /><Skeleton h={220} /></>}
       {q && !isFetching && isError && (
         <Card style={{ alignItems: "center", textAlign: "center", padding: 40 }}>
-          <h2 className="h3">No account or transaction found for "{q}"</h2>
-          <p className="text-2">Check the email or transaction ID and try again.</p>
+          {error?.status === 404 ? (
+            <>
+              <h2 className="h3">No account or transaction found for "{q}"</h2>
+              <p className="text-2">Check the email or transaction ID and try again.</p>
+            </>
+          ) : (
+            <>
+              <h2 className="h3">The check didn't work</h2>
+              <p className="text-2">We couldn't reach PayPal's records. Nothing was changed. Try again in a moment.</p>
+            </>
+          )}
         </Card>
       )}
       {q && !isFetching && data && (
