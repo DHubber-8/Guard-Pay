@@ -19,8 +19,8 @@ export default function AuditLog() {
           <table className="table">
             <thead><tr><th>Time</th><th>Case</th><th>Action</th><th>AI suggested</th><th>Decision</th><th>By</th><th>Notes</th></tr></thead>
             <tbody>
-              {rows.map((a) => (
-                <tr key={a.at + a.case + a.action}>
+              {rows.map((a, i) => (
+                <tr key={a.id ?? `row-${i}`}>
                   <td className="small" style={{ whiteSpace: "nowrap" }}>{a.at}</td>
                   <td><Link to={`/cases/${a.case}`} className="link">{a.case}</Link></td>
                   <td className="body-strong">{a.action}</td>

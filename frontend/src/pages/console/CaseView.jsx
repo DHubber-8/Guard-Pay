@@ -231,8 +231,8 @@ export default function CaseView() {
 
           <Card>
             <div className="row gap-8"><ScrollText size={18} color="var(--navy-700)" /><h2 className="h3">Audit log</h2></div>
-            {c.audit?.length ? c.audit.map((a) => (
-              <div key={a.at + a.action} className="stack gap-4">
+            {c.audit?.length ? c.audit.map((a, i) => (
+              <div key={a.id ?? `row-${i}`} className="stack gap-4">
                 <span className="small muted">{a.at} · {STAFF[a.by] ?? a.by}</span>
                 <span className="body-strong">{a.action}</span>
                 <span className="small text-2">{a.decision}{a.notes ? ` · "${a.notes}"` : ""}</span>
