@@ -1,7 +1,7 @@
 // Dispute queue (AG Grid). Every open dispute PayPal sent us, sorted by deadline.
 // Views: ?view=mine | due | high | waiting | resolved
 import { useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AgGridReact } from "ag-grid-react";
 import { themeQuartz } from "ag-grid-community";
@@ -46,7 +46,12 @@ export default function Queue() {
   const count = (v) => cases.filter((c) => VIEWS[v](c, staff.id)).length;
 
   const columns = useMemo(() => [
-    { field: "id", headerName: "Case", width: 140, cellRenderer: (p) => <span className="row gap-8 body-strong">{p.data.flagged && <Flag size={14} color="var(--danger)" aria-label="Flagged" />}{p.value}</span> },
+    // A real link so keyboard and screen reader users can open the case too
+    { field: "id", headerName: "Case", width: 140, cellRenderer: (p) => (
+      <Link to={`/cases/${p.value}`} className="row gap-8 body-strong case-link" onClick={(e) => e.stopPropagation()}>
+        {p.data.flagged && <Flag size={14} color="var(--danger)" aria-label="Flagged" />}{p.value}
+      </Link>
+    ) },
     { field: "reason", headerName: "Reason", flex: 1, minWidth: 170, valueFormatter: (p) => REASON_LABEL[p.value] ?? p.value },
     { field: "stage", headerName: "Stage", width: 92 },
     { field: "buyer", headerName: "Buyer", flex: 1, minWidth: 150 },
