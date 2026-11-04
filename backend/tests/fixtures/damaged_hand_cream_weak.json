@@ -1,0 +1,25 @@
+{
+  "fixture_id": "damaged-hand-cream-weak",
+  "scenario": "item_not_as_described_damaged",
+  "seller": "Glow Haven Beauty",
+  "item": "Velvet Repair Hand Cream, 2 L Salon Pump Refill",
+  "amount": "25.00",
+  "currency": "USD",
+  "paypal_order_id": "DEMO-DAMAGED-HAND-CREAM-WEAK",
+  "tracking_number": "DEMO-DELIVERED-002",
+  "carrier": "DEMO_CARRIER",
+  "delivery_day": 4,
+  "reported_days_after_delivery": 20,
+  "buyer_chat": [
+    {"speaker": "buyer", "text": "The hand cream arrived damaged."},
+    {"speaker": "seller", "text": "Please share more details."}
+  ],
+  "seller_return_policy": "Damaged items may be returned within 14 days with photos of the item and packaging.",
+  "photo_descriptions": [],
+  "evidence": [
+    {"description": "PayPal sandbox order and payment record.", "source": "paypal", "verified": true},
+    {"description": "Carrier record shows delivery on Day 4.", "source": "carrier", "verified": true},
+    {"description": "Buyer reported damage 20 days after delivery.", "source": "buyer_chat", "verified": false},
+    {"description": "Seller return-policy excerpt.", "source": "seller_policy", "verified": false}
+  ]
+}
