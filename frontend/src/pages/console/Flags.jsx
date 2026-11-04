@@ -1,7 +1,7 @@
 // Flags: accounts and transactions the system marked as suspicious, before or
 // outside a dispute. Opening one runs an account / transaction check.
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Flag } from "lucide-react";
 import { api } from "../../api";
@@ -27,10 +27,9 @@ export default function Flags() {
             <thead><tr><th>Level</th><th>Subject</th><th>Why it was flagged</th><th>When</th></tr></thead>
             <tbody>
               {rows.map((f) => (
-                <tr key={f.id} className="clickable" tabIndex={0} onClick={() => nav(flagLink(f))}
-                  onKeyDown={(e) => e.key === "Enter" && nav(flagLink(f))}>
+                <tr key={f.id} className="clickable" onClick={() => nav(flagLink(f))}>
                   <td><Badge level={f.level}><Flag size={12} />{f.level}</Badge></td>
-                  <td><span className="body-strong">{f.subject}</span><div className="small muted">{f.kind}</div></td>
+                  <td><Link to={flagLink(f)} className="body-strong" onClick={(e) => e.stopPropagation()}>{f.subject}</Link><div className="small muted">{f.kind}</div></td>
                   <td>{f.text}</td>
                   <td className="small muted" style={{ whiteSpace: "nowrap" }}>{f.when}</td>
                 </tr>

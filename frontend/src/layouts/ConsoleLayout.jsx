@@ -1,5 +1,5 @@
 // The staff console shell: sidebar navigation, a top bar with search, and the page.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ListChecks, UserSearch, Flag, ChartColumn, ScrollText, Search, Menu, LogOut, FlaskConical } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,9 @@ const LINKS = [
   ["/audit", "Audit log", ScrollText],
 ];
 
+const NARROW = "(max-width: 960px)";
+const isNarrow = () => typeof window !== "undefined" && window.matchMedia?.(NARROW).matches;
+
 /** Case IDs open the case; anything else (email, transaction ID) opens Account check. */
 export function searchTarget(q) {
   const v = q.trim();
@@ -28,6 +31,26 @@ export default function ConsoleLayout() {
   const nav = useNavigate();
   const staff = useStaff();
   const [open, setOpen] = useState(false);
+  // At 960px and below the sidebar is a slide-in menu: hidden from keyboard and
+  // screen readers while closed, focused when opened.
+  const [narrow, setNarrow] = useState(isNarrow);
+  const sideRef = useRef(null);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    const m = window.matchMedia?.(NARROW);
+    if (!m) return undefined;
+    const update = () => setNarrow(m.matches);
+    m.addEventListener("change", update);
+    return () => m.removeEventListener("change", update);
+  }, []);
+  useEffect(() => { if (open && narrow) sideRef.current?.querySelector("a")?.focus(); }, [open, narrow]);
+  const closeMenu = () => { setOpen(false); menuRef.current?.focus(); };
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => e.key === "Escape" && closeMenu();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   const [q, setQ] = useState("");
   const { data: cases = [] } = useQuery({ queryKey: ["cases"], queryFn: api.getCases });
   const { data: flags = [] } = useQuery({ queryKey: ["flags"], queryFn: api.getFlags });
@@ -42,7 +65,7 @@ export default function ConsoleLayout() {
 
   return (
     <div className={`console ${open ? "menu-open" : ""}`}>
-      <aside className="side" aria-label="Main">
+      <aside className="side" aria-label="Main" ref={sideRef} inert={narrow && !open}>
         <div className="side-brand">
           <img src="/favicon.svg" alt="" />
           <div><b>{BRAND_NAME}</b><small>PayPal Resolution Console</small></div>
@@ -61,10 +84,10 @@ export default function ConsoleLayout() {
           <button type="button" className="side-signout" onClick={() => { signOut(); nav("/signin"); }}><LogOut size={14} />Sign out</button>
         </div>
       </aside>
-      <div className="side-scrim" onClick={() => setOpen(false)} />
+      <div className="side-scrim" onClick={closeMenu} />
       <div className="console-main">
         <header className="console-top">
-          <button className="icon-btn menu-btn" aria-label="Open menu" onClick={() => setOpen(true)}><Menu size={22} /></button>
+          <button ref={menuRef} className="icon-btn menu-btn" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}><Menu size={22} /></button>
           <form className="top-search" onSubmit={search} role="search">
             <Search size={16} />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search case ID, transaction ID or email" aria-label="Search" />

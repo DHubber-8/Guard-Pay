@@ -25,7 +25,7 @@
 /* ---------- Shell ---------- */
 .console { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; background: var(--cream-100); }
 .side {
-  position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 4px;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px;
   background: var(--navy-900); color: #c9d4e6; padding: 20px 14px;
 }
 .side-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; color: white; }
@@ -119,3 +119,7 @@
 div.watch-row:last-of-type { border-bottom: 0; }
 a.watch-row { border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
 a.watch-row:hover { border-color: var(--blue-600); background: var(--mist-50); }
+
+/* Case IDs in the queue are links, so keyboard users can open them */
+.case-link:hover, .table td a.body-strong:hover { color: var(--blue-700); text-decoration: underline; }
+.case-link:focus-visible, .table td a:focus-visible { outline: 2px solid var(--blue-600); outline-offset: 2px; border-radius: 4px; }
