@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.paypal.client import PayPalClient
 from app.paypal.disputes import ApprovalRequiredError
@@ -16,8 +16,7 @@ from app.paypal.orders import OrderSummary, get_order
 
 
 class TrackingResult(BaseModel):
-    class Config:
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")
 
     order_id: str
     capture_id: str
