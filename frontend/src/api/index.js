@@ -52,6 +52,18 @@ export function toQueueRow(c) {
   };
 }
 
+// Action ids drive the case page: info_buyer / info_merchant open the request-info
+// flow, and moves_money adds the "this moves money" warning. Plain strings from an
+// older backend get an id guessed from their wording.
+function toOption(a, i) {
+  if (typeof a === "object" && a) {
+    return { id: a.id ?? `a${i}`, title: a.title, sub: a.sub, movesMoney: a.moves_money, recommended: a.recommended ?? i === 0 };
+  }
+  const t = String(a);
+  const id = /ask the buyer|buyer for more/i.test(t) ? "info_buyer" : /ask the merchant|merchant for /i.test(t) ? "info_merchant" : `a${i}`;
+  return { id, title: t, recommended: i === 0 };
+}
+
 // Findings contract (docs/FRONTEND_BACKEND_GAPS.md §1) -> case workspace
 export function toCaseDetail(c) {
   const f = c.findings || {};
@@ -70,8 +82,8 @@ export function toCaseDetail(c) {
       ...(f.missing_information || []).map((t) => ({ side: "missing", kind: "missing", text: t, detail: "" })),
     ],
     flags: (f.risk_reasons || []).map((t) => ({ level: row.risk === "high" ? "high" : "medium", text: t })),
-    options: (f.recommended_actions || []).map((t, i) => ({ id: `a${i}`, title: t, recommended: i === 0 })),
-    recommendation: f.recommended_actions?.[0] ?? "",
+    options: (f.recommended_actions || []).map(toOption),
+    recommendation: f.recommendation ?? toOption(f.recommended_actions?.[0] ?? "", 0).title ?? "",
     // Written by the A7 delivery watch worker (docs/FRONTEND_BACKEND_GAPS.md §10)
     deliveryWatch: f.delivery_watch ? {
       carrier: f.delivery_watch.carrier, tracking: f.delivery_watch.tracking_number, status: f.delivery_watch.status,
@@ -150,7 +162,7 @@ const realApi = {
   decide: async (id, body) => {
     const res = await http(`/cases/${encodeURIComponent(id)}/approve`, {
       method: "POST",
-      body: { action_type: body.action, approver_id: body.approverId, decision: body.decision, ai_recommendation: body.aiRecommendation, notes: body.notes },
+      body: { action_type: body.action, action_id: body.actionId, approver_id: body.approverId, decision: body.decision, ai_recommendation: body.aiRecommendation, notes: body.notes },
     });
     if (res?.status !== "recorded") throw new Error("decision_not_saved");
     return res;

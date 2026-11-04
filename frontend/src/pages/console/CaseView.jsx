@@ -20,7 +20,7 @@ const KIND = {
 };
 const SIDE = { buyer: "Buyer", merchant: "Merchant", paypal: "PayPal", missing: "Missing" };
 const isInfo = (o) => o?.id?.startsWith("info_");
-const movesMoney = (o) => /refund|buyer_full|partial/i.test(o?.id || "") || /refund/i.test(o?.title || "");
+const movesMoney = (o) => o?.movesMoney ?? (/refund|buyer_full|partial/i.test(o?.id || "") || /refund/i.test(o?.title || ""));
 
 function Party({ title, p, rows }) {
   return (
@@ -91,6 +91,7 @@ export default function CaseView() {
   const decide = useMutation({
     mutationFn: () => api.decide(id, {
       action: chosen.title,
+      actionId: chosen.id,
       aiRecommendation: recommended?.title ?? "–",
       decision: chosen.id === recommended?.id ? "Approved AI suggestion" : "Chose a different action",
       notes,
