@@ -74,14 +74,22 @@ Use the team's sandbox accounts (names and emails only; passwords stay in `.env`
 ```
 
 ### 8. Flags
-`GET /flags` → `[{ "id", "level": "high | medium", "kind": "Account | Transaction", "subject", "text", "when", "query" }]`. `query` is what the frontend passes to `/checks`.
+`GET /flags` → `[{ "id", "level": "high | medium", "kind": "Account | Transaction | Delivery", "subject", "text", "when", "query", "case" }]`. `query` is what the frontend passes to `/checks`. Delivery flags (from the A7 delivery watch) send `case` instead, and open that case.
 
 ### 9. Assignment and staff
 - `POST /cases/{id}/assign` body `{ "staff_id" }`.
 - Staff sign-in: PayPal staff SSO in production. For the demo, `GET /auth/me` → `{ "id", "name", "initials", "role" }` with an httpOnly cookie (the frontend sends `credentials: "include"`).
 
 ### 10. Audit log
-`GET /audit-log` → `[{ "at", "case", "action", "ai", "decision", "by", "notes" }]`, newest first.
+`GET /audit-log` → `[{ "at", "case", "action", "ai", "decision", "by", "notes" }]`, newest first. Rows from the A7 workers use `by: "deadline-watch"` or `"delivery-watch"` and `decision: "Reminder sent"` or `"Flag raised"`.
+
+### 11. Automatic checks (A7, `workers/`)
+Both workers only read data, then write flags, reminders and audit rows. They never decide a case or move money (`docs/RULES.md`).
+- **Deadline watch** (`workers/deadlines.py`, about every 15 min): read `response_due_date` from PayPal (`get_dispute` in A3), keep `Case.response_deadline` up to date, and for cases due in under 24 h write an `AuditLog` row (`by: "deadline-watch"`, `action: "Deadline reminder: PayPal response due in N h"`, `notes: "Sent to <staff>"`). The queue's "Due in 24 h" view and the red deadlines come from `response_deadline`.
+- **Delivery watch** (`workers/delivery_watch.py`, about every 30 min): for open cases with tracking, read the carrier status (`get_tracking` in A4, mock carrier in A8) and save it on the case as `findings.delivery_watch`:
+  `{ "carrier": "UPS", "tracking_number": "1Z…", "status": "delivered | in_transit | stalled | not_shipped", "latest_event": "14 Oct 10:42 · Delivered, signed", "last_checked": "<ISO time>", "mismatch": "Carrier says delivered; buyer says not received" | null }`.
+  When `mismatch` is set or the parcel is `stalled`, also add a Delivery flag (§8) and an `AuditLog` row (`by: "delivery-watch"`, `decision: "Flag raised"`).
+- `GET /workers/status` → `{ "delivery": { "lastRun", "every" }, "deadline": { "lastRun", "every" } }` for the Overview card.
 
 ## Nice to have
 - `GET /insights` → `{ weeks, opened, closed, reasons: [[label, percent]], stats: { avgHoursToDecision, misunderstandings, aiAgreed, flagsThisWeek }, patterns: [[name, trend, detail]] }`.

@@ -48,7 +48,7 @@ export const caseDetails = {
     buyer: B.jordan, merchant: M.daniel,
     timeline: [tl("8 Oct", "Payment completed · $186.00"), tl("9 Oct", "Merchant added tracking (UPS)"), tl("14 Oct", "Delivered · signed \"J. CLAIMS\""), tl("22 Oct", "Buyer opened inquiry: item not received", true), tl("27 Oct", "Escalated to claim by buyer", true)],
     evidence: [
-      ev("merchant", "verified", "Tracking shows delivered 14 Oct", "From UPS via PayPal tracking"),
+      ev("merchant", "verified", "Tracking shows delivered 14 Oct", "From UPS · checked by delivery watch"),
       ev("merchant", "verified", "Signature on delivery", "Name matches the account holder"),
       ev("buyer", "unverified", "Buyer statement: \"never arrived\"", "No police report or photo provided"),
       ev("buyer", "contradiction", "Buyer says nobody was home", "Carrier record shows an in-person signature"),
@@ -97,7 +97,7 @@ export const caseDetails = {
     buyer: B.alex, merchant: M.maya,
     timeline: [tl("20 Oct", "Payment completed · $64.00"), tl("25 Oct", "Delivered"), tl("26 Oct", "Buyer opened claim: not as described, 2 photos", true)],
     evidence: [
-      ev("paypal", "verified", "Delivered 25 Oct", "USPS via PayPal tracking"),
+      ev("paypal", "verified", "Delivered 25 Oct", "From USPS · checked by delivery watch"),
       ev("buyer", "unverified", "2 photos of a cracked handle", "No signs of editing found"),
       ev("merchant", "missing", "Packaging photo", "Optional; helps with a carrier claim"),
     ],
@@ -154,7 +154,7 @@ export const caseDetails = {
     buyer: B.sam, merchant: M.priya,
     timeline: [tl("12 Oct", "Payment completed · $230.00"), tl("18 Oct", "Delivered"), tl("21 Oct", "Buyer opened claim: not as described", true), tl("26 Oct", "Merchant uploaded an invoice"), tl("28 Oct", "Staff asked the merchant for the original listing")],
     evidence: [
-      ev("paypal", "verified", "Delivered 18 Oct", "FedEx via PayPal tracking"),
+      ev("paypal", "verified", "Delivered 18 Oct", "From FedEx · checked by delivery watch"),
       ev("buyer", "unverified", "Photo of the label", "Shows a different brand"),
       ev("merchant", "contradiction", "Invoice: $195.00 dated 2 Oct", "Order was $230.00 on 12 Oct"),
     ],
@@ -167,10 +167,33 @@ export const caseDetails = {
   },
 };
 
+// Delivery watch (A7 worker): carrier status for each dispute's shipment,
+// checked on a schedule through PayPal tracking and the carrier. It only reads
+// data and raises flags; it never decides a case.
+export const deliveryWatch = {
+  "PP-D-41027": { carrier: "UPS", tracking: "1Z 88A 2041 7730", status: "delivered", latest: "14 Oct 10:42 · Delivered, signed \"J. CLAIMS\"", lastChecked: "6 min ago",
+    mismatch: "Carrier says delivered and signed for. The buyer says it never arrived." },
+  "PP-D-41033": { carrier: "–", tracking: "–", status: "not_shipped", latest: "Merchant hasn't added tracking yet", lastChecked: "6 min ago" },
+  "PP-D-41040": { carrier: "USPS", tracking: "9400 1000 0000 0000 41", status: "delivered", latest: "25 Oct 14:10 · Delivered, front door", lastChecked: "6 min ago" },
+  "PP-D-41051": { carrier: "USPS", tracking: "9400 1000 0000 0000 51", status: "in_transit", latest: "2 Nov 18:05 · Arrived at regional facility · expected 6 Nov", lastChecked: "6 min ago" },
+  "PP-D-41062": { carrier: "FedEx", tracking: "7781 2290 1162", status: "delivered", latest: "18 Oct 11:30 · Delivered", lastChecked: "6 min ago" },
+  "PP-D-41066": { carrier: "USPS", tracking: "9400 1000 0000 0000 66", status: "stalled", latest: "28 Oct 09:15 · Accepted at origin, no scan since", lastChecked: "6 min ago",
+    mismatch: "No carrier scan for 6 days on an item-not-received case." },
+  "PP-D-40990": { carrier: "UPS", tracking: "1Z 88A 2041 0990", status: "delivered", latest: "20 Oct 16:02 · Delivered, photo on file", lastChecked: "Stopped (case resolved)" },
+};
+
+// When the two automatic checks last ran (A7 workers)
+export const watchStatus = {
+  delivery: { lastRun: "6 min ago", every: "Every 30 min" },
+  deadline: { lastRun: "2 min ago", every: "Every 15 min" },
+};
+
 // Things the system flagged that aren't disputes (yet)
 export const flags = [
+  { id: "F-2203", level: "high", kind: "Delivery", subject: "PP-D-41066", text: "No carrier scan for 6 days on an item-not-received case", when: "1 h ago", case: "PP-D-41066" },
   { id: "F-2201", level: "high", kind: "Account", subject: "prize-claims-desk@example.com", text: "14 Friends and Family payments from new contacts in 48 h", when: "2 h ago", query: "prize-claims-desk@example.com" },
   { id: "F-2198", level: "high", kind: "Account", subject: B.jordan.name, text: "5 item-not-received claims in 90 days, 4 on delivered parcels", when: "Today", query: B.jordan.email },
+  { id: "F-2197", level: "medium", kind: "Delivery", subject: "PP-D-41027", text: "Carrier says delivered and signed; the buyer says it never arrived", when: "Today", case: "PP-D-41027" },
   { id: "F-2195", level: "high", kind: "Transaction", subject: "3RT77104AB920033C", text: "Payment 40 min after a password reset from a new device", when: "Yesterday", query: "3RT77104AB920033C" },
   { id: "F-2190", level: "medium", kind: "Account", subject: M.priya.name, text: "Dispute rate rose from 0.8% to 2.1% in 30 days", when: "2 days ago", query: M.priya.email },
   { id: "F-2186", level: "medium", kind: "Transaction", subject: "5LM33018JK210186H", text: "Shipping and billing in different countries, order 6× the store average", when: "3 days ago", query: "5LM33018JK210186H" },
@@ -249,6 +272,9 @@ export const checks = {
 export const CHECK_EXAMPLES = [B.jordan.email, "prize-claims-desk@example.com", "3RT77104AB920033C", M.maya.email];
 
 export const auditLog = [
+  { at: "31 Oct 08:00", case: "PP-D-41033", action: "Deadline reminder: PayPal response due in 14 h", ai: "–", decision: "Reminder sent", by: "deadline-watch", notes: "Sent to Diana R." },
+  { at: "31 Oct 07:52", case: "PP-D-41066", action: "No carrier scan for 6 days", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "USPS 9400 1000 0000 0000 66" },
+  { at: "31 Oct 07:52", case: "PP-D-41027", action: "Carrier delivery doesn't match the claim", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "UPS: delivered and signed 14 Oct" },
   { at: "30 Oct 16:42", case: "PP-D-40990", action: "Rule for seller", ai: "Rule for seller", decision: "Approved", by: "staff-diana", notes: "Delivery confirmed with photo" },
   { at: "30 Oct 11:05", case: "PP-D-41062", action: "Request info from merchant", ai: "Request original listing", decision: "Approved", by: "staff-kevin", notes: "" },
   { at: "29 Oct 15:20", case: "PP-D-40981", action: "Partial refund $20.00", ai: "Partial refund $20.00", decision: "Edited", by: "staff-ana", notes: "Changed from $15 after buyer photo" },

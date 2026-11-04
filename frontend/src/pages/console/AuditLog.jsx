@@ -5,14 +5,14 @@ import { api } from "../../api";
 import { Card, Badge, Skeleton } from "../../components/ui";
 import { STAFF } from "../../labels";
 
-const TONE = (d) => (d.startsWith("Approved") ? "low" : d.startsWith("Rejected") || d.startsWith("Chose") ? "medium" : d.startsWith("Edited") ? "info" : "neutral");
+const TONE = (d) => (d.startsWith("Approved") ? "low" : d.startsWith("Rejected") || d.startsWith("Chose") || d.startsWith("Flag") ? "medium" : d.startsWith("Edited") ? "info" : "neutral");
 
 export default function AuditLog() {
   const { data: rows } = useQuery({ queryKey: ["audit"], queryFn: api.getAuditLog });
   return (
     <>
       <div className="page-head">
-        <div><h1 className="h1">Audit log</h1><p>Every decision made in the console. The AI never moves money, rules on a case or acts on an account by itself.</p></div>
+        <div><h1 className="h1">Audit log</h1><p>Every decision made in the console, plus every reminder and flag from the automatic checks. The AI never moves money, rules on a case or acts on an account by itself.</p></div>
       </div>
       {!rows ? <Skeleton h={300} /> : (
         <Card className="flush">

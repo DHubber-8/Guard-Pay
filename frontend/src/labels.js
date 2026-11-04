@@ -17,7 +17,15 @@ export const ASSESSMENT = {
 };
 
 // Staff directory for the demo. The backend will return names with each case.
-export const STAFF = { "staff-diana": "Diana R.", "staff-kevin": "Kevin L.", "staff-ana": "Ana P." };
+export const STAFF = { "staff-diana": "Diana R.", "staff-kevin": "Kevin L.", "staff-ana": "Ana P.", "delivery-watch": "Delivery watch", "deadline-watch": "Deadline watch" };
+
+// Delivery watch (A7 worker): latest carrier status for a dispute's shipment.
+export const DELIVERY = {
+  delivered: ["low", "Delivered"],
+  in_transit: ["info", "In transit"],
+  stalled: ["high", "No carrier scan"],
+  not_shipped: ["medium", "Not shipped"],
+};
 
 export const money = (v) => `$${Number(v).toFixed(2)}`;
 export const due = (h) => {
