@@ -98,6 +98,8 @@ const store = {
   cases: mock.cases.map((c) => ({ ...c })),
   audit: mock.auditLog.map((a) => ({ ...a })),
 };
+let auditSeq = 2000;
+const nextAuditId = () => `AL-${auditSeq++}`;
 const now = () => new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(",", "");
 
 function mockDetail(id) {
@@ -113,11 +115,11 @@ function mockDetail(id) {
 const mockApi = {
   getCases: async () => { await wait(); return store.cases.map((c) => ({ ...c, delivery: mock.deliveryWatch[c.id]?.status ?? null })); },
   getCase: async (id) => { await wait(); return mockDetail(id); },
-  requestInfo: async (id, { party, message }) => {
+  requestInfo: async (id, { party, message, approverId }) => {
     await wait(500);
     const c = store.cases.find((x) => x.id === id);
     c.status = party === "buyer" ? "Waiting for buyer" : "Waiting for merchant";
-    store.audit.unshift({ at: now(), case: id, action: `Request info from ${party}`, ai: "–", decision: "Sent via PayPal", by: "staff-diana", notes: message.slice(0, 80) });
+    store.audit.unshift({ id: nextAuditId(), at: now(), case: id, action: `Request info from ${party}`, ai: "–", decision: "Sent via PayPal", by: approverId ?? "staff-diana", notes: message.slice(0, 80) });
     return { status: "sent", via: "paypal" };
   },
   decide: async (id, { action, aiRecommendation, decision, notes, approverId }) => {
@@ -125,7 +127,7 @@ const mockApi = {
     if (!approverId) throw new Error("approver_required");
     const c = store.cases.find((x) => x.id === id);
     c.status = "Resolved";
-    store.audit.unshift({ at: now(), case: id, action, ai: aiRecommendation, decision, by: approverId, notes });
+    store.audit.unshift({ id: nextAuditId(), at: now(), case: id, action, ai: aiRecommendation, decision, by: approverId, notes });
     return { status: "recorded" };
   },
   assign: async (id, staffId) => { await wait(200); store.cases.find((x) => x.id === id).assignee = staffId; return { ok: true }; },

@@ -32,6 +32,8 @@ export const cases = [
   { id: "PP-D-41058", reason: "scam_report", stage: "Claim", merchant: "prize-claims-desk@example.com", buyer: B.riley.name, amount: 250.0, deadlineHours: 20, risk: "high", evidenceStatus: "partial", status: "Needs review", assignee: "staff-ana", flagged: true },
   { id: "PP-D-41062", reason: "not_as_described", stage: "Claim", merchant: M.priya.name, buyer: B.sam.name, amount: 230.0, deadlineHours: 52, risk: "medium", evidenceStatus: "partial", status: "Waiting for merchant", assignee: "staff-kevin" },
   { id: "PP-D-41066", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.alex.name, amount: 45.0, deadlineHours: 160, risk: "inconclusive", evidenceStatus: "missing", status: "Waiting for merchant", assignee: "staff-diana" },
+  { id: "PP-D-40981", reason: "not_as_described", stage: "Claim", merchant: M.maya.name, buyer: B.taylor.name, amount: 48.0, deadlineHours: 999, risk: "low", evidenceStatus: "complete", status: "Resolved", assignee: "staff-ana" },
+  { id: "PP-D-40977", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.casey.name, amount: 75.0, deadlineHours: 999, risk: "medium", evidenceStatus: "partial", status: "Resolved", assignee: "staff-diana" },
   { id: "PP-D-40990", reason: "item_not_received", stage: "Claim", merchant: M.maya.name, buyer: B.sam.name, amount: 38.5, deadlineHours: 999, risk: "low", evidenceStatus: "complete", status: "Resolved", assignee: "staff-diana" },
 ];
 
@@ -272,13 +274,13 @@ export const checks = {
 export const CHECK_EXAMPLES = [B.jordan.email, "prize-claims-desk@example.com", "3RT77104AB920033C", M.maya.email];
 
 export const auditLog = [
-  { at: "31 Oct 08:00", case: "PP-D-41033", action: "Deadline reminder: PayPal response due in 14 h", ai: "–", decision: "Reminder sent", by: "deadline-watch", notes: "Sent to Diana R." },
-  { at: "31 Oct 07:52", case: "PP-D-41066", action: "No carrier scan for 6 days", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "USPS 9400 1000 0000 0000 66" },
-  { at: "31 Oct 07:52", case: "PP-D-41027", action: "Carrier delivery doesn't match the claim", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "UPS: delivered and signed 14 Oct" },
-  { at: "30 Oct 16:42", case: "PP-D-40990", action: "Rule for seller", ai: "Rule for seller", decision: "Approved", by: "staff-diana", notes: "Delivery confirmed with photo" },
-  { at: "30 Oct 11:05", case: "PP-D-41062", action: "Request info from merchant", ai: "Request original listing", decision: "Approved", by: "staff-kevin", notes: "" },
-  { at: "29 Oct 15:20", case: "PP-D-40981", action: "Partial refund $20.00", ai: "Partial refund $20.00", decision: "Edited", by: "staff-ana", notes: "Changed from $15 after buyer photo" },
-  { at: "29 Oct 09:48", case: "PP-D-40977", action: "Refund $75.00", ai: "Rule for seller", decision: "Rejected AI suggestion", by: "staff-diana", notes: "Tracking was for a different address" },
+  { id: "AL-1099", at: "31 Oct 08:00", case: "PP-D-41033", action: "Deadline reminder: PayPal response due in 14 h", ai: "–", decision: "Reminder sent", by: "deadline-watch", notes: "Sent to Diana R." },
+  { id: "AL-1098", at: "31 Oct 07:52", case: "PP-D-41066", action: "No carrier scan for 6 days", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "USPS 9400 1000 0000 0000 66" },
+  { id: "AL-1097", at: "31 Oct 07:52", case: "PP-D-41027", action: "Carrier delivery doesn't match the claim", ai: "–", decision: "Flag raised", by: "delivery-watch", notes: "UPS: delivered and signed 14 Oct" },
+  { id: "AL-1096", at: "30 Oct 16:42", case: "PP-D-40990", action: "Rule for seller", ai: "Rule for seller", decision: "Approved", by: "staff-diana", notes: "Delivery confirmed with photo" },
+  { id: "AL-1095", at: "30 Oct 11:05", case: "PP-D-41062", action: "Request info from merchant", ai: "Request original listing", decision: "Approved", by: "staff-kevin", notes: "" },
+  { id: "AL-1094", at: "29 Oct 15:20", case: "PP-D-40981", action: "Partial refund $20.00", ai: "Partial refund $20.00", decision: "Edited", by: "staff-ana", notes: "Changed from $15 after buyer photo" },
+  { id: "AL-1093", at: "29 Oct 09:48", case: "PP-D-40977", action: "Refund $75.00", ai: "Rule for seller", decision: "Rejected AI suggestion", by: "staff-diana", notes: "Tracking was for a different address" },
 ];
 
 export const insights = {
