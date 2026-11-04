@@ -32,7 +32,12 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
   "evidence_supporting": [{ "description": "Tracking shows delivered 14 Oct", "source": "paypal", "verified": true }],
   "evidence_contradicting": [{ "description": "Buyer says nobody was home", "source": "buyer", "verified": false }],
   "missing_information": ["Police report"],
-  "recommended_actions": ["Rule in favour of the seller", "Ask the buyer for more information"],
+  "recommended_actions": [
+    { "id": "seller", "title": "Rule in favour of the seller", "sub": "Delivery and signature are verified" },
+    { "id": "info_buyer", "title": "Ask the buyer for more information" },
+    { "id": "buyer_full", "title": "Rule in favour of the buyer · refund $186.00", "moves_money": true }
+  ],
+  "recommendation": "Recommend ruling for the seller and sending the claim history to the risk team.",
   "overall_assessment": "high_suspicion | medium_suspicion | low_suspicion | inconclusive",
   "requires_human_decision": true,
   "stage": "Inquiry | Claim",
@@ -42,7 +47,7 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
   "transaction": { "id": "9KX20417LM553201A", "date": "8 Oct 2026", "items": "1 × Wireless speaker", "shipTo": "...", "tracking": "UPS ..." }
 }
 ```
-`source` is one of `paypal | buyer | merchant`. No confidence percentages (RULES.md).
+`source` is one of `paypal | buyer | merchant`. The first action is the AI's pick. Action ids starting with `info_` (`info_buyer`, `info_merchant`) open the request-info flow instead of a decision; `moves_money: true` shows a warning before confirming. Plain strings still work, but their ids are guessed from the wording. No confidence percentages (RULES.md).
 
 ### 2. Case routes (A6, `routes/cases.py`)
 - `GET /cases` → list of `Case` rows with `findings` filled (the queue reads `paypal_dispute_id`, `scenario`, `status`, `risk_level`, `evidence_status`, `response_deadline`).
@@ -52,7 +57,7 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
 ### 3. Decisions (A6 + B6, `routes/approvals.py`)
 `POST /cases/{id}/approve` body:
 ```json
-{ "action_type": "Rule in favour of the seller", "approver_id": "staff-diana",
+{ "action_type": "Rule in favour of the seller", "action_id": "seller", "approver_id": "staff-diana",
   "decision": "Approved AI suggestion | Chose a different action", "ai_recommendation": "Rule in favour of the seller", "notes": "..." }
 ```
 Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal: `accept_claim` / `provide_evidence` (A3) for a ruling, `refund_capture` (A4) for a refund. `notes` is required when the decision differs from the AI. Respond `{ "status": "recorded" }` only once the rows are saved; the console treats any other response as a failure.
