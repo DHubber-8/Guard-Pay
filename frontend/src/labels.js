@@ -20,10 +20,12 @@ export const ASSESSMENT = {
 export const STAFF = { "staff-diana": "Diana R.", "staff-kevin": "Kevin L.", "staff-ana": "Ana P.", "delivery-watch": "Delivery watch", "deadline-watch": "Deadline watch" };
 
 // Delivery watch (A7 worker): latest carrier status for a dispute's shipment.
+// Same statuses as the mock carrier (backend/app/mocks/carrier.py), plus not_shipped.
 export const DELIVERY = {
   delivered: ["low", "Delivered"],
   in_transit: ["info", "In transit"],
-  stalled: ["high", "No carrier scan"],
+  stuck: ["high", "No carrier scan"],
+  lost: ["high", "Lost"],
   not_shipped: ["medium", "Not shipped"],
 };
 

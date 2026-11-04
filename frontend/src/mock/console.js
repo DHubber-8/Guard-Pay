@@ -177,7 +177,7 @@ export const deliveryWatch = {
   "PP-D-41040": { carrier: "USPS", tracking: "9400 1000 0000 0000 41", status: "delivered", latest: "25 Oct 14:10 · Delivered, front door", lastChecked: "6 min ago" },
   "PP-D-41051": { carrier: "USPS", tracking: "9400 1000 0000 0000 51", status: "in_transit", latest: "2 Nov 18:05 · Arrived at regional facility · expected 6 Nov", lastChecked: "6 min ago" },
   "PP-D-41062": { carrier: "FedEx", tracking: "7781 2290 1162", status: "delivered", latest: "18 Oct 11:30 · Delivered", lastChecked: "6 min ago" },
-  "PP-D-41066": { carrier: "USPS", tracking: "9400 1000 0000 0000 66", status: "stalled", latest: "28 Oct 09:15 · Accepted at origin, no scan since", lastChecked: "6 min ago",
+  "PP-D-41066": { carrier: "USPS", tracking: "9400 1000 0000 0000 66", status: "stuck", latest: "28 Oct 09:15 · Accepted at origin, no scan since", lastChecked: "6 min ago",
     mismatch: "No carrier scan for 6 days on an item-not-received case." },
   "PP-D-40990": { carrier: "UPS", tracking: "1Z 88A 2041 0990", status: "delivered", latest: "20 Oct 16:02 · Delivered, photo on file", lastChecked: "Stopped (case resolved)" },
 };
