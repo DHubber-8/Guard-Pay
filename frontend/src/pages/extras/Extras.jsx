@@ -41,7 +41,8 @@ export function States() {
 export const SCREENS = [
   ["Sign in", [["01", "Staff sign in", "/signin"]]],
   ["Disputes", [["02", "Overview", "/"], ["03", "Dispute queue", "/queue"], ["04", "Case: item not received (flagged)", "/cases/PP-D-41027"], ["05", "Case: unauthorized payment", "/cases/PP-D-41033"], ["06", "Case: not as described", "/cases/PP-D-41040"], ["07", "Case: unrecognized charge", "/cases/PP-D-41044"], ["08", "Case: scam report", "/cases/PP-D-41058"]]],
-  ["Extras", [["S2", "Common states", "/extras/states"]]],
+  ["Checks and reports", [["09", "Account check (empty)", "/checks"], ["10", "Account check: refund-abuse pattern", "/checks?q=dh-buyer-3%40personal.example.com"], ["11", "Account check: scam recipient", "/checks?q=prize-claims-desk%40example.com"], ["12", "Transaction check", "/checks?q=3RT77104AB920033C"], ["13", "Flags", "/flags"], ["14", "Insights", "/insights"], ["15", "Audit log", "/audit"]]],
+  ["Extras", [["S2", "Common states", "/extras/states"], ["S3", "Case not found", "/cases/PP-D-00000"]]],
 ];
 
 export function ScreensIndex() {
