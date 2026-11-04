@@ -10,7 +10,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173. Go to **http://localhost:5173/screens** for a clickable list of every screen.
+Open http://localhost:5173.
 
 Demo data lives in memory, so refreshing the page resets decisions and requests.
 
@@ -60,4 +60,3 @@ The search box in the top bar opens a case for a case ID (`PP-D-…`) and an acc
 ## Notes
 - Fonts: Inter (bundled through `@fontsource`) for text, Lil Grotesk (SIL OFL, in `public/fonts/`) for headings.
 - The build warns that the JS file is large (mostly AG Grid). That's fine for the hackathon.
-- Before submitting, set `SHOW_SCREENS_LINK = false` in `src/config.js` to hide the "All screens" tab.

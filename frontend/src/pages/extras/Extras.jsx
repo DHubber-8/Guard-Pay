@@ -1,4 +1,4 @@
-// Common states, plus a "/screens" index of every screen (testing helper)
+// Common empty, loading, error and not-found states
 import { Link } from "react-router-dom";
 import { CircleCheck, TriangleAlert, Search } from "lucide-react";
 import { Button, Card, Skeleton, Logo } from "../../components/ui";
@@ -6,7 +6,7 @@ import { Button, Card, Skeleton, Logo } from "../../components/ui";
 function Page({ title, children }) {
   return (
     <div className="app-bg"><div className="page stack gap-32">
-      <div className="row between"><Logo /><Link to="/screens" className="small body-strong">All screens</Link></div>
+      <div className="row between"><Logo /><Link to="/" className="small body-strong">Back to console</Link></div>
       <h1 className="h1">{title}</h1>
       {children}
     </div></div>
@@ -33,32 +33,6 @@ export function States() {
         <Card style={{ padding: 40 }}><span className="caption muted">Loading</span><Skeleton w="90%" /><Skeleton w="70%" /><Skeleton w="85%" /><Skeleton w="50%" /><Skeleton h={110} /></Card>
         <State title="Error" icon={TriangleAlert} head="Couldn't reach PayPal" sub="We'll retry automatically. Nothing was changed." btn="Try again" err />
         <State title="Not found" icon={Search} head="No account or transaction found" sub="Check the email or transaction ID and try again." btn="Try again" />
-      </div>
-    </Page>
-  );
-}
-
-export const SCREENS = [
-  ["Sign in", [["01", "Staff sign in", "/signin"]]],
-  ["Disputes", [["02", "Overview", "/"], ["03", "Dispute queue", "/queue"], ["04", "Case: item not received (flagged)", "/cases/PP-D-41027"], ["05", "Case: unauthorized payment", "/cases/PP-D-41033"], ["06", "Case: not as described", "/cases/PP-D-41040"], ["07", "Case: unrecognized charge", "/cases/PP-D-41044"], ["08", "Case: scam report", "/cases/PP-D-41058"]]],
-  ["Checks and reports", [["09", "Account check (empty)", "/checks"], ["10", "Account check: refund-abuse pattern", "/checks?q=dh-buyer-3%40personal.example.com"], ["11", "Account check: scam recipient", "/checks?q=prize-claims-desk%40example.com"], ["12", "Transaction check", "/checks?q=3RT77104AB920033C"], ["13", "Flags", "/flags"], ["14", "Insights", "/insights"], ["15", "Audit log", "/audit"]]],
-  ["Extras", [["S2", "Common states", "/extras/states"], ["S3", "Case not found", "/cases/PP-D-00000"]]],
-];
-
-export function ScreensIndex() {
-  return (
-    <Page title="All screens">
-      <div className="grid-3 screens-index" style={{ alignItems: "start" }}>
-        {SCREENS.map(([group, items]) => (
-          <Card key={group}>
-            <h2 className="h3">{group}</h2>
-            <ul className="stack gap-8" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-              {items.map(([n, label, to]) => (
-                <li key={n} className="row gap-12"><span className="caption muted" style={{ width: 32 }}>{n}</span><Link to={to}>{label}</Link></li>
-              ))}
-            </ul>
-          </Card>
-        ))}
       </div>
     </Page>
   );
