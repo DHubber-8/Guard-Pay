@@ -1,11 +1,17 @@
 // Team insights: case volume, reasons, how often staff agree with the AI, and rising patterns.
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../api";
-import { Card, Badge, Skeleton } from "../../components/ui";
+import { Card, Badge, Skeleton, Notice } from "../../components/ui";
 import { LineChart, BarList } from "../../components/Charts";
 
 export default function Insights() {
-  const { data: d } = useQuery({ queryKey: ["insights"], queryFn: api.getInsights });
+  const { data: d, isError } = useQuery({ queryKey: ["insights"], queryFn: api.getInsights, retry: false });
+  if (isError) return (
+    <>
+      <div className="page-head"><div><h1 className="h1">Insights</h1></div></div>
+      <Notice>Insights aren't available yet. They appear once the backend sends them.</Notice>
+    </>
+  );
   if (!d) return <Skeleton h={420} />;
   const s = d.stats;
   return (
