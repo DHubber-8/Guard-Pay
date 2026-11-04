@@ -1,12 +1,12 @@
 <!-- Owner: Digant; Status: in progress -->
 # PayPalSupport
 
-AI assistant scaffold for helping small merchants resolve PayPal disputes and helping individuals assess suspicious payment requests, unexpected charges, and fake sellers. Merchant and personal modes will share one analysis pipeline.
+AI assistant for PayPal staff who resolve disputes. Disputes arrive from PayPal (webhooks and the Disputes API); the system pulls the order, tracking, evidence and account history from PayPal, flags anything suspicious, and suggests a resolution. Staff can also check any account or transaction for fraud signals. A person makes every decision, and every decision is logged.
 
 ## Structure
 
 - `backend/`: FastAPI API, PayPal adapters, agents, rules, workers, and tests
-- `frontend/`: React/Vite dashboard and placeholder flows
+- `frontend/`: React/Vite staff console (dispute queue, case workspace, account check, flags, insights, audit log)
 - `docs/`: non-negotiable rules, task board, and contribution workflow
 - `data/fixtures/`: synthetic demo data only
 
