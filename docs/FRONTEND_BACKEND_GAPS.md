@@ -10,13 +10,14 @@ All data comes from PayPal (webhooks, Disputes API, Orders, tracking, account an
 security history). The console never contacts buyers or merchants directly:
 requests for information go out through PayPal's Resolution Center.
 
-Checked against `main` at `2a4389b` plus the open backend branches `feat/a3-disputes-wrapper` and `feat/a4-refund-tracking` (they merge with this frontend without conflicts).
+Checked against `main` at `9b3dcf6` (after A3, A4 and A8 were merged).
 
 ## What already lines up
 - `POST /webhooks/paypal` turns `CUSTOMER.DISPUTE.CREATED/UPDATED/RESOLVED` into `Case` rows. That is exactly how disputes reach the queue.
 - `paypal/client.py` (OAuth) and `paypal/orders.py` (order lookup) give the transaction details.
-- Dispute wrappers (A3, on `feat/a3-disputes-wrapper`): `list_disputes`, `get_dispute`, `send_message`, `accept_claim` and `provide_evidence`, each checking approval and `allowed_response_options`. The A6 routes can call these directly.
-- Refund and tracking wrappers (A4, on `feat/a4-refund-tracking`): `get_capture`, `refund_capture`, `add_tracking` and `get_tracking`. Decisions use the refund wrapper; the delivery watch (§10) uses `get_tracking`.
+- Dispute wrappers (A3, `paypal/disputes.py`): `list_disputes`, `get_dispute`, `send_message`, `accept_claim` and `provide_evidence`, each checking approval and `allowed_response_options`. The A6 routes can call these directly.
+- Refund and tracking wrappers (A4, `paypal/refunds.py`, `paypal/tracking.py`): `get_capture`, `refund_capture`, `add_tracking` and `get_tracking`. Decisions use the refund wrapper; the delivery watch (§10) uses `get_tracking`.
+- Mock carrier (A8, `mocks/carrier.py`, `GET /mock-carrier/tracking/{number}`): returns `delivered`, `in_transit`, `stuck` or `lost` from the tracking number, which is what the delivery watch needs for the demo.
 - `Approval` (`approver_id`, `action_type`, `ai_recommendation`, decision, notes) and `AuditLog` match the decision and audit screens.
 - CORS: `FRONTEND_ORIGIN` defaults to `http://localhost:5173`, the Vite port.
 
@@ -60,7 +61,7 @@ Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, a
 `POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
 
 ### 5. Fixtures (A8, `data/fixtures/*.json`)
-Use the team's sandbox accounts (names and emails only; passwords stay in `.env`). `frontend/src/mock/console.js` has matching demo cases you can copy.
+`scripts/seed_demo.py` (A8) seeds the damaged hand cream fixtures from the merchant plan. For the console demo, also seed staff cases like the ones in `frontend/src/mock/console.js` (item not received, unauthorized, not as described, unrecognized charge, scam report), using the team's sandbox accounts (names and emails only; passwords stay in `.env`).
 
 ## Should have
 
@@ -86,8 +87,8 @@ Use the team's sandbox accounts (names and emails only; passwords stay in `.env`
 Both workers only read data, then write flags, reminders and audit rows. They never decide a case or move money (`docs/RULES.md`).
 - **Deadline watch** (`workers/deadlines.py`, about every 15 min): read `response_due_date` from PayPal (`get_dispute` in A3), keep `Case.response_deadline` up to date, and for cases due in under 24 h write an `AuditLog` row (`by: "deadline-watch"`, `action: "Deadline reminder: PayPal response due in N h"`, `notes: "Sent to <staff>"`). The queue's "Due in 24 h" view and the red deadlines come from `response_deadline`.
 - **Delivery watch** (`workers/delivery_watch.py`, about every 30 min): for open cases with tracking, read the carrier status (`get_tracking` in A4, mock carrier in A8) and save it on the case as `findings.delivery_watch`:
-  `{ "carrier": "UPS", "tracking_number": "1Z…", "status": "delivered | in_transit | stalled | not_shipped", "latest_event": "14 Oct 10:42 · Delivered, signed", "last_checked": "<ISO time>", "mismatch": "Carrier says delivered; buyer says not received" | null }`.
-  When `mismatch` is set or the parcel is `stalled`, also add a Delivery flag (§7) and an `AuditLog` row (`by: "delivery-watch"`, `decision: "Flag raised"`).
+  `{ "carrier": "UPS", "tracking_number": "1Z…", "status": "delivered | in_transit | stuck | lost | not_shipped", "latest_event": "14 Oct 10:42 · Delivered, signed", "last_checked": "<ISO time>", "mismatch": "Carrier says delivered; buyer says not received" | null }`.
+  The first four statuses come straight from the carrier (or the A8 mock carrier); use `not_shipped` when the order has no tracking. When `mismatch` is set or the parcel is `stuck` or `lost`, also add a Delivery flag (§7) and an `AuditLog` row (`by: "delivery-watch"`, `decision: "Flag raised"`).
 - `GET /workers/status` → `{ "delivery": { "lastRun", "every" }, "deadline": { "lastRun", "every" } }` for the Overview card.
 
 ## Nice to have

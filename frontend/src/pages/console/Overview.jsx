@@ -50,7 +50,7 @@ export default function Overview() {
             </Link>
             <Link to="/flags" className="watch-row">
               <Truck size={18} />
-              <span className="grow stack gap-4"><span className="body-strong">Delivery watch</span><span className="small text-2">{open.filter((c) => c.delivery).length} shipments watched · {open.filter((c) => c.delivery === "stalled" || (c.delivery === "delivered" && c.flagged && c.reason === "item_not_received")).length} need a look</span><span className="small muted">Last run {watch.delivery.lastRun} · {watch.delivery.every.toLowerCase()}</span></span>
+              <span className="grow stack gap-4"><span className="body-strong">Delivery watch</span><span className="small text-2">{open.filter((c) => c.delivery).length} shipments watched · {open.filter((c) => c.delivery === "stuck" || c.delivery === "lost" || (c.delivery === "delivered" && c.flagged && c.reason === "item_not_received")).length} need a look</span><span className="small muted">Last run {watch.delivery.lastRun} · {watch.delivery.every.toLowerCase()}</span></span>
             </Link>
           </div>
         </Card>
