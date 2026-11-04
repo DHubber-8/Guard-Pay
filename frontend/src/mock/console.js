@@ -4,8 +4,6 @@
 
 export const staff = { id: "staff-diana", name: "Diana R.", initials: "DR", role: "Resolution specialist", team: "Disputes · US" };
 
-export const STAFF = { "staff-diana": "Diana R.", "staff-kevin": "Kevin L.", "staff-ana": "Ana P." };
-
 // Merchants (BUSINESS sandbox accounts)
 const M = {
   maya: { name: "Maya Storefront", email: "dh-merchant-1@business.example.com", since: "Mar 2021", disputeRate: "0.4%", sellerProtection: "Eligible" },
@@ -23,13 +21,6 @@ const B = {
   morgan: { name: "Morgan Unrecognised", email: "dh-buyer-7@personal.example.com", since: "Apr 2017", disputes90d: 0, country: "US" },
 };
 
-export const REASON_LABEL = {
-  item_not_received: "Item not received",
-  not_as_described: "Not as described",
-  unauthorized: "Unauthorized transaction",
-  unrecognized_charge: "Unrecognized charge",
-  scam_report: "Scam report",
-};
 
 // Queue rows. deadlineHours = time left before PayPal's response deadline.
 export const cases = [
