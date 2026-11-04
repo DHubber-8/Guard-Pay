@@ -62,7 +62,7 @@ export default function CaseView() {
     onError: () => showToast("Couldn't record the decision · nothing was changed"),
   });
   const ask = useMutation({
-    mutationFn: () => api.requestInfo(id, { party, message }),
+    mutationFn: () => api.requestInfo(id, { party, message, approverId: staff.id }),
     onSuccess: () => { setModal(null); refresh(); showToast(`Sent through PayPal · waiting for the ${party}`); },
     onError: () => showToast("Couldn't send the request · try again"),
   });
