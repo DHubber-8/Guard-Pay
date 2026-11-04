@@ -8,15 +8,15 @@ Priority: Must / Should / Nice.
 |---|---|---|---|---|---|---|---|---|
 | S1 | Shared | Define findings schema and API contract | schemas/findings.py | none | Must | Proposed | TBD | |
 | S2 | Shared | Define merchant and personal scenario catalog | rules/scenarios.py | none | Must | Proposed | TBD | |
-| A1 | A | Configure PayPal sandbox and order lookup | config.py, paypal/ | none | Must | In progress | Digant | |
-| A2 | A | Add verified webhook receiver | routes/webhooks.py | A1 | Must | Proposed | TBD | |
-| A3 | A | Add dispute API wrapper | paypal/disputes.py | A1 | Must | Proposed | TBD | |
-| A4 | A | Add refund and tracking wrappers | paypal/refunds.py, paypal/tracking.py | A1 | Must | Proposed | TBD | |
-| A5 | A | Add database models and sessions | db/ | none | Must | Proposed | TBD | |
-| A6 | A | Add order-help, case, approval, and personal routes | routes/ | S1, A5 | Must | Proposed | TBD | |
-| A7 | A | Add delivery watch and deadline workers | workers/ | A5, A8 | Should | Proposed | TBD | |
-| A8 | A | Add mock carrier, fixtures, and scripts | mocks/, data/, scripts/ | none | Must | Proposed | TBD | |
-| A9 | A | Add Render and Docker deployment setup | render.yaml, docker-compose.yml | none | Must | Proposed | TBD | |
+| A1 | A | Configure PayPal sandbox and order lookup | config.py, paypal/ | none | Must | Done | Digant | |
+| A2 | A | Add verified webhook receiver | routes/webhooks.py | A1 | Must | Done | Digant | |
+| A3 | A | Add dispute API wrapper | paypal/disputes.py | A1 | Must | In progress | Digant | |
+| A4 | A | Add refund and tracking wrappers | paypal/refunds.py, paypal/tracking.py | A1 | Must | Proposed | Digant | |
+| A5 | A | Add database models and sessions | db/ | none | Must | Proposed | Digant | |
+| A6 | A | Add order-help, case, approval, and personal routes | routes/ | S1, A5 | Must | Proposed | Digant | |
+| A7 | A | Add delivery watch and deadline workers | workers/ | A5, A8 | Should | Proposed | Digant | |
+| A8 | A | Add mock carrier, fixtures, and scripts | mocks/, data/, scripts/ | none | Must | Proposed | Digant | |
+| A9 | A | Add Render and Docker deployment setup | render.yaml, docker-compose.yml | none | Must | Proposed | Digant | |
 | B1 | B | Classify scenarios | agents/classifier.py | S2 | Must | Proposed | TBD | |
 | B2 | B | Add explainers and personal advisor | agents/ | S1 | Must | Proposed | TBD | |
 | B3 | B | Add evidence rules and document reader | rules/evidence.py, agents/doc_reader.py | S2 | Must | Proposed | TBD | |
