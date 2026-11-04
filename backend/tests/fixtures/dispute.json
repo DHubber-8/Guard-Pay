@@ -1,0 +1,42 @@
+{
+  "dispute_id": "PP-D-001",
+  "create_time": "2026-01-02T03:04:05Z",
+  "update_time": "2026-01-03T03:04:05Z",
+  "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED",
+  "status": "OPEN",
+  "dispute_amount": {"currency_code": "USD", "value": "25.00"},
+  "buyer_response_due_date": "2026-01-10T00:00:00Z",
+  "seller_response_due_date": "2026-01-12T00:00:00Z",
+  "disputed_transactions": [
+    {
+      "buyer_transaction_id": "BUYER-TXN-1",
+      "seller_transaction_id": "CAPTURE-1",
+      "reference_id": "ORDER-1",
+      "create_time": "2026-01-01T03:04:05Z",
+      "transaction_status": "COMPLETED",
+      "gross_amount": {"currency_code": "USD", "value": "25.00"}
+    }
+  ],
+  "messages": [
+    {
+      "posted_by": "BUYER",
+      "time_posted": "2026-01-03T04:05:06Z",
+      "content": "Package was not received."
+    }
+  ],
+  "evidences": [
+    {
+      "evidence_type": "PROOF_OF_DELIVERY",
+      "notes": "Carrier record",
+      "source": "REQUESTED_FROM_SELLER",
+      "date": "2026-01-03",
+      "item_id": "ITEM-1",
+      "item_type": "PHYSICAL"
+    }
+  ],
+  "allowed_response_options": {
+    "accept_claim": {"accept_claim_types": ["FULL"]},
+    "provide_evidence": {},
+    "send_message": {}
+  }
+}
