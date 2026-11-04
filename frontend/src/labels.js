@@ -19,4 +19,9 @@ export const ASSESSMENT = {
 export const STAFF = { "staff-diana": "Diana R.", "staff-kevin": "Kevin L.", "staff-ana": "Ana P." };
 
 export const money = (v) => `$${Number(v).toFixed(2)}`;
-export const due = (h) => (h >= 999 ? "–" : h < 24 ? `${Math.max(h, 0)} h` : `${Math.round(h / 24)} days`);
+export const due = (h) => {
+  if (h >= 999) return "–";
+  if (h < 48) return `${Math.max(h, 0)} h`;
+  const d = Math.round(h / 24);
+  return `${d} day${d === 1 ? "" : "s"}`;
+};

@@ -24,15 +24,15 @@ const B = {
 
 // Queue rows. deadlineHours = time left before PayPal's response deadline.
 export const cases = [
-  { id: "PP-D-41027", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.jordan.name, amount: 186.0, deadlineHours: 30, risk: "high", evidence: "complete", status: "Needs review", assignee: "staff-diana", flagged: true },
-  { id: "PP-D-41033", reason: "unauthorized", stage: "Claim", merchant: M.priya.name, buyer: B.morgan.name, amount: 420.0, deadlineHours: 14, risk: "high", evidence: "partial", status: "Needs review", assignee: "staff-diana", flagged: true },
-  { id: "PP-D-41040", reason: "not_as_described", stage: "Claim", merchant: M.maya.name, buyer: B.alex.name, amount: 64.0, deadlineHours: 70, risk: "low", evidence: "partial", status: "Needs review", assignee: "staff-diana" },
-  { id: "PP-D-41044", reason: "unrecognized_charge", stage: "Inquiry", merchant: M.daniel.name, buyer: B.casey.name, amount: 14.99, deadlineHours: 120, risk: "low", evidence: "complete", status: "Needs review", assignee: "staff-kevin" },
-  { id: "PP-D-41051", reason: "item_not_received", stage: "Inquiry", merchant: M.maya.name, buyer: B.taylor.name, amount: 92.0, deadlineHours: 96, risk: "low", evidence: "complete", status: "Needs review", assignee: "staff-diana" },
-  { id: "PP-D-41058", reason: "scam_report", stage: "Claim", merchant: "prize-claims-desk@example.com", buyer: B.riley.name, amount: 250.0, deadlineHours: 20, risk: "high", evidence: "partial", status: "Needs review", assignee: "staff-ana", flagged: true },
-  { id: "PP-D-41062", reason: "not_as_described", stage: "Claim", merchant: M.priya.name, buyer: B.sam.name, amount: 230.0, deadlineHours: 52, risk: "medium", evidence: "partial", status: "Waiting for merchant", assignee: "staff-kevin" },
-  { id: "PP-D-41066", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.alex.name, amount: 45.0, deadlineHours: 160, risk: "inconclusive", evidence: "missing", status: "Waiting for merchant", assignee: "staff-diana" },
-  { id: "PP-D-40990", reason: "item_not_received", stage: "Claim", merchant: M.maya.name, buyer: B.sam.name, amount: 38.5, deadlineHours: 999, risk: "low", evidence: "complete", status: "Resolved", assignee: "staff-diana" },
+  { id: "PP-D-41027", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.jordan.name, amount: 186.0, deadlineHours: 30, risk: "high", evidenceStatus: "complete", status: "Needs review", assignee: "staff-diana", flagged: true },
+  { id: "PP-D-41033", reason: "unauthorized", stage: "Claim", merchant: M.priya.name, buyer: B.morgan.name, amount: 420.0, deadlineHours: 14, risk: "high", evidenceStatus: "partial", status: "Needs review", assignee: "staff-diana", flagged: true },
+  { id: "PP-D-41040", reason: "not_as_described", stage: "Claim", merchant: M.maya.name, buyer: B.alex.name, amount: 64.0, deadlineHours: 70, risk: "low", evidenceStatus: "partial", status: "Needs review", assignee: "staff-diana" },
+  { id: "PP-D-41044", reason: "unrecognized_charge", stage: "Inquiry", merchant: M.daniel.name, buyer: B.casey.name, amount: 14.99, deadlineHours: 120, risk: "low", evidenceStatus: "complete", status: "Needs review", assignee: "staff-kevin" },
+  { id: "PP-D-41051", reason: "item_not_received", stage: "Inquiry", merchant: M.maya.name, buyer: B.taylor.name, amount: 92.0, deadlineHours: 96, risk: "low", evidenceStatus: "complete", status: "Needs review", assignee: "staff-diana" },
+  { id: "PP-D-41058", reason: "scam_report", stage: "Claim", merchant: "prize-claims-desk@example.com", buyer: B.riley.name, amount: 250.0, deadlineHours: 20, risk: "high", evidenceStatus: "partial", status: "Needs review", assignee: "staff-ana", flagged: true },
+  { id: "PP-D-41062", reason: "not_as_described", stage: "Claim", merchant: M.priya.name, buyer: B.sam.name, amount: 230.0, deadlineHours: 52, risk: "medium", evidenceStatus: "partial", status: "Waiting for merchant", assignee: "staff-kevin" },
+  { id: "PP-D-41066", reason: "item_not_received", stage: "Claim", merchant: M.daniel.name, buyer: B.alex.name, amount: 45.0, deadlineHours: 160, risk: "inconclusive", evidenceStatus: "missing", status: "Waiting for merchant", assignee: "staff-diana" },
+  { id: "PP-D-40990", reason: "item_not_received", stage: "Claim", merchant: M.maya.name, buyer: B.sam.name, amount: 38.5, deadlineHours: 999, risk: "low", evidenceStatus: "complete", status: "Resolved", assignee: "staff-diana" },
 ];
 
 const tl = (date, text, alert) => ({ date, text, alert: !!alert });

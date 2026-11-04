@@ -39,6 +39,8 @@ export function States() {
 }
 
 export const SCREENS = [
+  ["Sign in", [["01", "Staff sign in", "/signin"]]],
+  ["Disputes", [["02", "Overview", "/"], ["03", "Dispute queue", "/queue"], ["04", "Case: item not received (flagged)", "/cases/PP-D-41027"], ["05", "Case: unauthorized payment", "/cases/PP-D-41033"], ["06", "Case: not as described", "/cases/PP-D-41040"], ["07", "Case: unrecognized charge", "/cases/PP-D-41044"], ["08", "Case: scam report", "/cases/PP-D-41058"]]],
   ["Extras", [["S2", "Common states", "/extras/states"]]],
 ];
 
