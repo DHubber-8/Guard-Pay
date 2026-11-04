@@ -127,7 +127,11 @@ const realApi = {
   getCases: async () => (await http("/cases")).map(toQueueRow),
   getCase: async (id) => toCaseDetail(await http(`/cases/${encodeURIComponent(id)}`)),
   // NOT IN BACKEND YET: PayPal sends the request to the buyer or merchant
-  requestInfo: (id, body) => http(`/cases/${encodeURIComponent(id)}/request-info`, { method: "POST", body }),
+  // (paypal/disputes.py send_message needs approver_id).
+  requestInfo: (id, { party, message, approverId }) => http(`/cases/${encodeURIComponent(id)}/request-info`, {
+    method: "POST",
+    body: { party, message, approver_id: approverId },
+  }),
   // Backend: POST /cases/{id}/approve (stub). Writes Approval + AuditLog rows.
   decide: (id, body) => http(`/cases/${encodeURIComponent(id)}/approve`, {
     method: "POST",

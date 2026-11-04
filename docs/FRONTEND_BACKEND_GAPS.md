@@ -55,10 +55,10 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
 Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal (refund or dispute outcome). `notes` is required when the decision differs from the AI.
 
 ### 4. Request information through PayPal (A3)
-`POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "..." }` → sends a message through the PayPal Disputes API (`/v1/customer/disputes/{id}/send-message` or the request-evidence flow), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
+`POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
 
 ### 5. Dispute wrappers (A3, `paypal/disputes.py`)
-`get_dispute` is a stub. Needed: list disputes, get one (with messages and evidence), send message, accept claim / provide outcome. Check `allowed_response_options` before acting.
+On the `feat/a3-disputes-wrapper` branch: `list_disputes`, `get_dispute`, `send_message`, `accept_claim` and `provide_evidence`, each checking approval and `allowed_response_options`. The routes in A6 can call these directly.
 
 ### 6. Fixtures (A8, `data/fixtures/*.json`)
 Use the team's sandbox accounts (names and emails only; passwords stay in `.env`). `frontend/src/mock/console.js` has matching demo cases you can copy.
