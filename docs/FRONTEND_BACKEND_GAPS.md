@@ -60,10 +60,13 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
 { "action_type": "Rule in favour of the seller", "action_id": "seller", "approver_id": "staff-diana",
   "decision": "Approved AI suggestion | Chose a different action", "ai_recommendation": "Rule in favour of the seller", "notes": "..." }
 ```
-Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal: `accept_claim` / `provide_evidence` (A3) for a ruling, `refund_capture` (A4) for a refund. `notes` is required when the decision differs from the AI. Respond `{ "status": "recorded" }` only once the rows are saved; the console treats any other response as a failure.
+Keep three things apart:
+- **The staff ruling** (what the staff member decided): always saved as an `Approval` and an `AuditLog` row first. Reject an empty `approver_id`.
+- **The PayPal call** that carries it out, if any: `refund_capture` (A4) for a refund; `accept_claim` or `provide_evidence` (A3) where the sandbox dispute allows them. These are the closest public sandbox actions. They respond to a claim; they don't record a ruling, so the ruling lives in our database.
+- **The case status** afterwards (`Resolved`, or `Waiting for ...`). `notes` is required when the decision differs from the AI. Respond `{ "status": "recorded" }` only once the rows are saved; the console treats any other response as a failure.
 
 ### 4. Request information through PayPal (A3)
-`POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
+`POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`. PayPal only allows `send_message` in some dispute states (check `allowed_response_options`). When it isn't allowed, respond `409` with a short `detail`; the console then shows that the request wasn't sent and changes nothing.
 
 ### 5. Fixtures (A8, `data/fixtures/*.json`)
 `scripts/seed_demo.py` (A8) seeds the damaged hand cream fixtures from the merchant plan. For the console demo, also seed staff cases like the ones in `frontend/src/mock/console.js` (item not received, unauthorized, not as described, unrecognized charge, scam report), using the team's sandbox accounts (names and emails only; passwords stay in `.env`).
@@ -84,6 +87,7 @@ Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, a
 ### 8. Assignment and staff
 - `POST /cases/{id}/assign` body `{ "staff_id" }`.
 - Staff sign-in: the frontend doesn't call the backend for this yet. "Continue with PayPal" signs in a demo staff member in the browser. In production this would be PayPal's staff single sign-on.
+- Until then `approver_id` comes from the browser, so it is only trustworthy for the demo. Once there is a real session, the backend should take the approver from the session and ignore the `approver_id` in the request body.
 
 ### 9. Audit log
 `GET /audit-log` → `[{ "at", "case", "action", "ai", "decision", "by", "notes" }]`, newest first. Rows from the A7 workers use `by: "deadline-watch"` or `"delivery-watch"` and `decision: "Reminder sent"` or `"Flag raised"`.
