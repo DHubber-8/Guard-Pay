@@ -107,8 +107,6 @@
 .signin { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(900px 500px at 100% 0%, #dbe9ff, transparent 60%), radial-gradient(700px 500px at 0% 100%, #e6f4fb, transparent 60%), var(--cream-100); }
 .signin-card { width: 100%; max-width: 440px; padding: 36px; gap: 20px; box-shadow: var(--shadow-md); }
 .sso-btn { height: 48px; }
-.divider-text { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
-.divider-text::before, .divider-text::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
 /* ---------- Grid ---------- */
 .grid-card { height: 100%; }
