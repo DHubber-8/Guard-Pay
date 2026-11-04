@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import Settings, settings
+from app.mocks import carrier
 from app.routes import approvals, cases, order_help, personal, webhooks
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,7 @@ def create_app(config: Settings = settings) -> FastAPI:
     application.include_router(cases.router)
     application.include_router(approvals.router)
     application.include_router(personal.router)
+    application.include_router(carrier.router)
     return application
 
 
