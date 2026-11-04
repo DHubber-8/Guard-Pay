@@ -1,4 +1,4 @@
-// Staff sign-in. In production this is PayPal's staff single sign-on; the demo
+// Staff sign-in through PayPal's staff single sign-on. In the demo, Continue
 // signs in as a sample specialist. We never ask for a password here.
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, KeyRound } from "lucide-react";
@@ -20,9 +20,7 @@ export default function SignIn() {
           <h1 className="h2">Sign in to review disputes</h1>
           <p className="text-2">For PayPal resolution and risk staff. Use your PayPal staff account.</p>
         </div>
-        <Button block className="sso-btn" onClick={go}><KeyRound size={18} />Continue with PayPal staff SSO</Button>
-        <div className="divider-text">Demo</div>
-        <Button block kind="secondary" onClick={go}>Sign in as Diana R. · Resolution specialist</Button>
+        <Button block className="sso-btn" onClick={go}><KeyRound size={18} />Continue with PayPal</Button>
         <Notice icon={ShieldCheck}>The AI only recommends. Every refund, ruling or account action needs a staff decision, and every decision is logged.</Notice>
       </Card>
     </div>
