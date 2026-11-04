@@ -136,15 +136,25 @@ const realApi = {
   getCase: async (id) => toCaseDetail(await http(`/cases/${encodeURIComponent(id)}`)),
   // NOT IN BACKEND YET: PayPal sends the request to the buyer or merchant
   // (paypal/disputes.py send_message needs approver_id).
-  requestInfo: (id, { party, message, approverId }) => http(`/cases/${encodeURIComponent(id)}/request-info`, {
-    method: "POST",
-    body: { party, message, approver_id: approverId },
-  }),
+  // Only report success when the backend says it sent the request (today's stubs don't).
+  requestInfo: async (id, { party, message, approverId }) => {
+    const res = await http(`/cases/${encodeURIComponent(id)}/request-info`, {
+      method: "POST",
+      body: { party, message, approver_id: approverId },
+    });
+    if (res?.status !== "sent") throw new Error("request_not_sent");
+    return res;
+  },
   // Backend: POST /cases/{id}/approve (stub). Writes Approval + AuditLog rows.
-  decide: (id, body) => http(`/cases/${encodeURIComponent(id)}/approve`, {
-    method: "POST",
-    body: { action_type: body.action, approver_id: body.approverId, decision: body.decision, ai_recommendation: body.aiRecommendation, notes: body.notes },
-  }),
+  // The current stub answers 200 with {"status": "stub"}, so only "recorded" counts as saved.
+  decide: async (id, body) => {
+    const res = await http(`/cases/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      body: { action_type: body.action, approver_id: body.approverId, decision: body.decision, ai_recommendation: body.aiRecommendation, notes: body.notes },
+    });
+    if (res?.status !== "recorded") throw new Error("decision_not_saved");
+    return res;
+  },
   // NOT IN BACKEND YET
   assign: (id, staffId) => http(`/cases/${encodeURIComponent(id)}/assign`, { method: "POST", body: { staff_id: staffId } }),
   getFlags: () => http("/flags"),

@@ -55,7 +55,7 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
 { "action_type": "Rule in favour of the seller", "approver_id": "staff-diana",
   "decision": "Approved AI suggestion | Chose a different action", "ai_recommendation": "Rule in favour of the seller", "notes": "..." }
 ```
-Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal: `accept_claim` / `provide_evidence` (A3) for a ruling, `refund_capture` (A4) for a refund. `notes` is required when the decision differs from the AI.
+Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal: `accept_claim` / `provide_evidence` (A3) for a ruling, `refund_capture` (A4) for a refund. `notes` is required when the decision differs from the AI. Respond `{ "status": "recorded" }` only once the rows are saved; the console treats any other response as a failure.
 
 ### 4. Request information through PayPal (A3)
 `POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
