@@ -44,7 +44,7 @@ export function toQueueRow(c) {
     amount: Number(f.amount ?? 0),
     deadlineHours: due ? Math.round((due - Date.now()) / 36e5) : 999,
     risk: c.risk_level || "inconclusive",
-    evidence: c.evidence_status || "missing",
+    evidenceStatus: c.evidence_status || "missing",
     status: c.status,
     assignee: f.assignee ?? null,
     flagged: c.risk_level === "high",
