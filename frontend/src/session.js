@@ -6,7 +6,7 @@ const KEY = "dh_staff";
 const listeners = new Set();
 const DEFAULT = { id: "staff-diana", name: "Diana R.", initials: "DR", role: "Resolution specialist" };
 
-let cached = null;
+let cached; // undefined until storage has been read; null means signed out
 function read() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -15,7 +15,7 @@ function read() {
 }
 
 export function getStaff() {
-  if (cached === null) cached = read() || DEFAULT;
+  if (cached === undefined) cached = read();
   return cached;
 }
 export function signIn(staff = DEFAULT) {
@@ -24,7 +24,7 @@ export function signIn(staff = DEFAULT) {
   listeners.forEach((l) => l());
 }
 export function signOut() {
-  cached = DEFAULT;
+  cached = null;
   try { localStorage.removeItem(KEY); } catch { /* storage blocked */ }
   listeners.forEach((l) => l());
 }

@@ -1,14 +1,16 @@
 // Staff sign-in through PayPal's staff single sign-on. In the demo, Continue
 // signs in as a sample specialist. We never ask for a password here.
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { ShieldCheck, KeyRound } from "lucide-react";
 import { Button, Card, Notice } from "../../components/ui";
 import { BRAND_NAME } from "../../config";
-import { signIn } from "../../session";
+import { signIn, useStaff } from "../../session";
 
 export default function SignIn() {
   const nav = useNavigate();
+  const staff = useStaff();
   const go = () => { signIn(); nav("/", { replace: true }); };
+  if (staff) return <Navigate to="/" replace />;
   return (
     <div className="signin">
       <Card className="signin-card">
