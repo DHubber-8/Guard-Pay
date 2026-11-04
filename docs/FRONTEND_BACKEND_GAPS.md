@@ -10,11 +10,13 @@ All data comes from PayPal (webhooks, Disputes API, Orders, tracking, account an
 security history). The console never contacts buyers or merchants directly:
 requests for information go out through PayPal's Resolution Center.
 
-Checked against `main` at `2a4389b`.
+Checked against `main` at `2a4389b` plus the open backend branches `feat/a3-disputes-wrapper` and `feat/a4-refund-tracking` (they merge with this frontend without conflicts).
 
 ## What already lines up
 - `POST /webhooks/paypal` turns `CUSTOMER.DISPUTE.CREATED/UPDATED/RESOLVED` into `Case` rows. That is exactly how disputes reach the queue.
 - `paypal/client.py` (OAuth) and `paypal/orders.py` (order lookup) give the transaction details.
+- Dispute wrappers (A3, on `feat/a3-disputes-wrapper`): `list_disputes`, `get_dispute`, `send_message`, `accept_claim` and `provide_evidence`, each checking approval and `allowed_response_options`. The A6 routes can call these directly.
+- Refund and tracking wrappers (A4, on `feat/a4-refund-tracking`): `get_capture`, `refund_capture`, `add_tracking` and `get_tracking`. Decisions use the refund wrapper; the delivery watch (§10) uses `get_tracking`.
 - `Approval` (`approver_id`, `action_type`, `ai_recommendation`, decision, notes) and `AuditLog` match the decision and audit screens.
 - CORS: `FRONTEND_ORIGIN` defaults to `http://localhost:5173`, the Vite port.
 
@@ -52,20 +54,17 @@ Stored in `Case.findings`. The case screen reads (see `toCaseDetail` in the API 
 { "action_type": "Rule in favour of the seller", "approver_id": "staff-diana",
   "decision": "Approved AI suggestion | Chose a different action", "ai_recommendation": "Rule in favour of the seller", "notes": "..." }
 ```
-Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal (refund or dispute outcome). `notes` is required when the decision differs from the AI.
+Must write an `Approval` and an `AuditLog` row, reject an empty `approver_id`, and only then call PayPal: `accept_claim` / `provide_evidence` (A3) for a ruling, `refund_capture` (A4) for a refund. `notes` is required when the decision differs from the AI.
 
 ### 4. Request information through PayPal (A3)
 `POST /cases/{id}/request-info` body `{ "party": "buyer | merchant", "message": "...", "approver_id": "staff-..." }` → sends a message through the PayPal Disputes API (`send_message` in `paypal/disputes.py`, which requires `approver_id` and `case_id`), sets the case to `Waiting for buyer | Waiting for merchant`, writes an `AuditLog` row. Response `{ "status": "sent", "via": "paypal" }`.
 
-### 5. Dispute wrappers (A3, `paypal/disputes.py`)
-On the `feat/a3-disputes-wrapper` branch: `list_disputes`, `get_dispute`, `send_message`, `accept_claim` and `provide_evidence`, each checking approval and `allowed_response_options`. The routes in A6 can call these directly.
-
-### 6. Fixtures (A8, `data/fixtures/*.json`)
+### 5. Fixtures (A8, `data/fixtures/*.json`)
 Use the team's sandbox accounts (names and emails only; passwords stay in `.env`). `frontend/src/mock/console.js` has matching demo cases you can copy.
 
 ## Should have
 
-### 7. Account and transaction check
+### 6. Account and transaction check
 `GET /checks?q=<email or transaction id>` → 404 when nothing is found, otherwise:
 ```json
 { "kind": "Account | Transaction", "title": "...", "sub": "...", "risk": "high", "evidenceStatus": "complete",
@@ -73,26 +72,33 @@ Use the team's sandbox accounts (names and emails only; passwords stay in `.env`
   "action": "Consider sending the account to the risk team ...", "cases": ["PP-D-41027"] }
 ```
 
-### 8. Flags
+### 7. Flags
 `GET /flags` → `[{ "id", "level": "high | medium", "kind": "Account | Transaction | Delivery", "subject", "text", "when", "query", "case" }]`. `query` is what the frontend passes to `/checks`. Delivery flags (from the A7 delivery watch) send `case` instead, and open that case.
 
-### 9. Assignment and staff
+### 8. Assignment and staff
 - `POST /cases/{id}/assign` body `{ "staff_id" }`.
-- Staff sign-in: PayPal staff SSO in production. For the demo, `GET /auth/me` → `{ "id", "name", "initials", "role" }` with an httpOnly cookie (the frontend sends `credentials: "include"`).
+- Staff sign-in: the frontend doesn't call the backend for this yet. "Continue with PayPal" signs in a demo staff member in the browser. In production this would be PayPal's staff single sign-on.
 
-### 10. Audit log
+### 9. Audit log
 `GET /audit-log` → `[{ "at", "case", "action", "ai", "decision", "by", "notes" }]`, newest first. Rows from the A7 workers use `by: "deadline-watch"` or `"delivery-watch"` and `decision: "Reminder sent"` or `"Flag raised"`.
 
-### 11. Automatic checks (A7, `workers/`)
+### 10. Automatic checks (A7, `workers/`)
 Both workers only read data, then write flags, reminders and audit rows. They never decide a case or move money (`docs/RULES.md`).
 - **Deadline watch** (`workers/deadlines.py`, about every 15 min): read `response_due_date` from PayPal (`get_dispute` in A3), keep `Case.response_deadline` up to date, and for cases due in under 24 h write an `AuditLog` row (`by: "deadline-watch"`, `action: "Deadline reminder: PayPal response due in N h"`, `notes: "Sent to <staff>"`). The queue's "Due in 24 h" view and the red deadlines come from `response_deadline`.
 - **Delivery watch** (`workers/delivery_watch.py`, about every 30 min): for open cases with tracking, read the carrier status (`get_tracking` in A4, mock carrier in A8) and save it on the case as `findings.delivery_watch`:
   `{ "carrier": "UPS", "tracking_number": "1Z…", "status": "delivered | in_transit | stalled | not_shipped", "latest_event": "14 Oct 10:42 · Delivered, signed", "last_checked": "<ISO time>", "mismatch": "Carrier says delivered; buyer says not received" | null }`.
-  When `mismatch` is set or the parcel is `stalled`, also add a Delivery flag (§8) and an `AuditLog` row (`by: "delivery-watch"`, `decision: "Flag raised"`).
+  When `mismatch` is set or the parcel is `stalled`, also add a Delivery flag (§7) and an `AuditLog` row (`by: "delivery-watch"`, `decision: "Flag raised"`).
 - `GET /workers/status` → `{ "delivery": { "lastRun", "every" }, "deadline": { "lastRun", "every" } }` for the Overview card.
 
 ## Nice to have
+- `GET /auth/me` → `{ "id", "name", "initials", "role" }` with an httpOnly cookie, so the signed-in staff member comes from the backend (the frontend already sends `credentials: "include"`).
 - `GET /insights` → `{ weeks, opened, closed, reasons: [[label, percent]], stats: { avgHoursToDecision, misunderstandings, aiAgreed, flagsThisWeek }, patterns: [[name, trend, detail]] }`.
 
 ## No longer needed
-The merchant and buyer endpoints from the earlier plan (Order Help lookup, buyer accept/decline, shipments, merchant settings, merchant stats, personal Scam Check) are not used by the frontend any more.
+The frontend no longer serves merchants or buyers, so it doesn't call these. They can be removed or left as stubs:
+- `POST /order-help`, `GET /order-help/{order_id}` (`routes/order_help.py`) and the Order Help lookup / accept endpoints from the earlier plan.
+- The `/personal` router (`routes/personal.py`) and personal Scam Check.
+- `POST /cases/{id}/decline`: staff decisions all go through `/approve` with a `decision` field.
+- Merchant settings, merchant stats and the merchant shipments page.
+
+Tracking data is still needed, but only for the delivery watch (§10), not as a separate page.

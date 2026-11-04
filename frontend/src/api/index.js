@@ -72,7 +72,7 @@ export function toCaseDetail(c) {
     flags: (f.risk_reasons || []).map((t) => ({ level: row.risk === "high" ? "high" : "medium", text: t })),
     options: (f.recommended_actions || []).map((t, i) => ({ id: `a${i}`, title: t, recommended: i === 0 })),
     recommendation: f.recommended_actions?.[0] ?? "",
-    // Written by the A7 delivery watch worker (docs/FRONTEND_BACKEND_GAPS.md §7)
+    // Written by the A7 delivery watch worker (docs/FRONTEND_BACKEND_GAPS.md §10)
     deliveryWatch: f.delivery_watch ? {
       carrier: f.delivery_watch.carrier, tracking: f.delivery_watch.tracking_number, status: f.delivery_watch.status,
       latest: f.delivery_watch.latest_event, lastChecked: f.delivery_watch.last_checked, mismatch: f.delivery_watch.mismatch,
