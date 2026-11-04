@@ -1,6 +1,6 @@
 // The staff console shell: sidebar navigation, a top bar with search, and the page.
 import { useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ListChecks, UserSearch, Flag, ChartColumn, ScrollText, Search, Menu, LogOut, FlaskConical } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../api";
@@ -56,6 +56,9 @@ export default function ConsoleLayout() {
   const { data: flags = [] } = useQuery({ queryKey: ["flags"], queryFn: api.getFlags });
   const counts = { queue: cases.filter((c) => c.status !== "Resolved").length, flags: flags.length };
   useEffect(() => setOpen(false), [pathname]);
+
+  // Console pages need a signed-in staff member
+  if (!staff) return <Navigate to="/signin" replace />;
 
   const search = (e) => {
     e.preventDefault();
