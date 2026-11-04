@@ -5,11 +5,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Sparkles, TriangleAlert, Flag, Send, Gavel, UserCheck, ScrollText, Search } from "lucide-react";
+import { ChevronRight, Sparkles, TriangleAlert, Flag, Send, Gavel, UserCheck, ScrollText, Search, Radar, Truck, Clock } from "lucide-react";
 import { api } from "../../api";
 import { Button, Card, Badge, RiskBadge, KV, Modal, RadioCard, Notice, Skeleton, Textarea, Chips, useToast } from "../../components/ui";
 import { EvidenceBadge } from "../../components/FindingsPanel";
-import { REASON_LABEL, ASSESSMENT, STAFF, money, due } from "../../labels";
+import { REASON_LABEL, ASSESSMENT, STAFF, DELIVERY, money, due } from "../../labels";
 import { useStaff } from "../../session";
 
 const KIND = {
@@ -29,6 +29,43 @@ function Party({ title, p, rows }) {
       <div className="stack"><span className="body-strong">{p.name}</span>{p.email && <span className="small muted">{p.email}</span>}</div>
       <KV rows={rows.filter(([, v]) => v != null && v !== "")} />
       {p.email && <Link to={`/checks?q=${encodeURIComponent(p.email)}`} className="link small row gap-4"><Search size={14} />Check this account</Link>}
+    </Card>
+  );
+}
+
+// The two A7 workers: deadline watch and delivery watch. They only read data
+// and raise flags or reminders; a person still makes every decision.
+function AutoChecks({ c, resolved }) {
+  const d = c.deliveryWatch;
+  const reminder = c.audit?.find((a) => a.by === "deadline-watch");
+  const [dTone, dLabel] = resolved ? ["neutral", "Closed"] : c.deadlineHours < 24 ? ["high", "Due soon"] : ["low", "On track"];
+  const [sTone, sLabel] = d ? DELIVERY[d.status] ?? ["neutral", d.status] : ["neutral", "No shipment"];
+  return (
+    <Card>
+      <div className="row gap-8"><Radar size={18} color="var(--blue-600)" /><h2 className="h3">Automatic checks</h2></div>
+      <div className="watch-row">
+        <Clock size={18} />
+        <div className="grow stack gap-4">
+          <span className="body-strong">Deadline watch</span>
+          <span className="small text-2">{resolved ? "Case is closed. No more reminders." : `PayPal response due in ${due(c.deadlineHours)}.`}{!resolved && (reminder ? ` ${reminder.notes || "Reminder sent"}.` : c.assignee ? "" : " Nobody is assigned yet.")}</span>
+        </div>
+        <Badge level={dTone}>{dLabel}</Badge>
+      </div>
+      <div className="watch-row">
+        <Truck size={18} />
+        <div className="grow stack gap-4">
+          <span className="body-strong">Delivery watch</span>
+          {d ? (
+            <>
+              <span className="small text-2">{d.carrier !== "–" ? `${d.carrier} ${d.tracking} · ` : ""}{d.latest}</span>
+              <span className="small muted">Checked {d.lastChecked}</span>
+            </>
+          ) : <span className="small text-2">No shipment to watch for this payment.</span>}
+        </div>
+        <Badge level={sTone}>{sLabel}</Badge>
+      </div>
+      {d?.mismatch && <Notice icon={TriangleAlert} tone="warm">{d.mismatch}</Notice>}
+      <p className="small muted">These checks only read PayPal and carrier data and raise flags. They never decide a case or move money.</p>
     </Card>
   );
 }
@@ -158,6 +195,7 @@ export default function CaseView() {
         </div>
 
         <div className="stack gap-24 sticky-col">
+          <AutoChecks c={c} resolved={resolved} />
           {c.flags.length > 0 && (
             <Card>
               <div className="row gap-8"><TriangleAlert size={18} color="var(--danger)" /><h2 className="h3">Why it's flagged</h2></div>

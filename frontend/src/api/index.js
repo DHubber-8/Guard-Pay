@@ -48,6 +48,7 @@ export function toQueueRow(c) {
     status: c.status || "Open",
     assignee: f.assignee ?? null,
     flagged: c.risk_level === "high",
+    delivery: f.delivery_watch?.status ?? null,
   };
 }
 
@@ -71,6 +72,12 @@ export function toCaseDetail(c) {
     flags: (f.risk_reasons || []).map((t) => ({ level: row.risk === "high" ? "high" : "medium", text: t })),
     options: (f.recommended_actions || []).map((t, i) => ({ id: `a${i}`, title: t, recommended: i === 0 })),
     recommendation: f.recommended_actions?.[0] ?? "",
+    // Written by the A7 delivery watch worker (docs/FRONTEND_BACKEND_GAPS.md §7)
+    deliveryWatch: f.delivery_watch ? {
+      carrier: f.delivery_watch.carrier, tracking: f.delivery_watch.tracking_number, status: f.delivery_watch.status,
+      latest: f.delivery_watch.latest_event, lastChecked: f.delivery_watch.last_checked, mismatch: f.delivery_watch.mismatch,
+    } : null,
+    audit: c.audit ?? [],
   };
 }
 
@@ -88,11 +95,11 @@ function mockDetail(id) {
     summary: "No AI summary yet for this case.", assessment: "inconclusive", transaction: {}, buyer: { name: row.buyer }, merchant: { name: row.merchant },
     timeline: [], evidence: [], flags: [], options: [{ id: "info_merchant", title: "Ask the merchant for tracking", recommended: true }], recommendation: "Consider asking for more information first.",
   };
-  return { ...row, ...d, audit: store.audit.filter((a) => a.case === id) };
+  return { ...row, ...d, deliveryWatch: mock.deliveryWatch[id] ?? null, audit: store.audit.filter((a) => a.case === id) };
 }
 
 const mockApi = {
-  getCases: async () => { await wait(); return store.cases; },
+  getCases: async () => { await wait(); return store.cases.map((c) => ({ ...c, delivery: mock.deliveryWatch[c.id]?.status ?? null })); },
   getCase: async (id) => { await wait(); return mockDetail(id); },
   requestInfo: async (id, { party, message }) => {
     await wait(500);
@@ -119,6 +126,7 @@ const mockApi = {
   },
   getInsights: async () => { await wait(); return mock.insights; },
   getAuditLog: async () => { await wait(); return store.audit; },
+  getWatchStatus: async () => { await wait(); return mock.watchStatus; },
 };
 
 /* ---------- Real backend ---------- */
@@ -143,6 +151,8 @@ const realApi = {
   checkAccount: (q) => http(`/checks?q=${encodeURIComponent(q)}`),
   getInsights: () => http("/insights"),
   getAuditLog: () => http("/audit-log"),
+  // NOT IN BACKEND YET: when the A7 workers last ran
+  getWatchStatus: () => http("/workers/status"),
 };
 
 export const api = { ...(USE_MOCK ? mockApi : realApi), health: () => http("/health") };
