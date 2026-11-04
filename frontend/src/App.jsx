@@ -1,8 +1,6 @@
-// Every route in the app. Tip: open /screens to see a clickable list of all screens.
+// Every route in the app.
 import { useEffect } from "react";
-import { Routes, Route, useLocation, Link } from "react-router-dom";
-import { LayoutGrid } from "lucide-react";
-import { SHOW_SCREENS_LINK } from "./config";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import ConsoleLayout from "./layouts/ConsoleLayout";
 import SignIn from "./pages/console/SignIn";
 import Overview from "./pages/console/Overview";
@@ -12,7 +10,7 @@ import AccountCheck from "./pages/console/AccountCheck";
 import Flags from "./pages/console/Flags";
 import Insights from "./pages/console/Insights";
 import AuditLog from "./pages/console/AuditLog";
-import { States, ScreensIndex } from "./pages/extras/Extras";
+import { States } from "./pages/extras/Extras";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -20,18 +18,10 @@ function ScrollToTop() {
   return null;
 }
 
-/** Testing helper: jump to the list of all screens from anywhere. */
-function ScreensTab() {
-  const { pathname } = useLocation();
-  if (!SHOW_SCREENS_LINK || pathname === "/screens") return null;
-  return <Link to="/screens" className="screens-tab" title="All screens (testing only)"><LayoutGrid size={16} /><span>All screens</span></Link>;
-}
-
 export default function App() {
   return (
     <>
       <ScrollToTop />
-      <ScreensTab />
       <Routes>
         <Route path="/signin" element={<SignIn />} />
         <Route element={<ConsoleLayout />}>
@@ -44,7 +34,7 @@ export default function App() {
           <Route path="audit" element={<AuditLog />} />
         </Route>
         <Route path="/extras/states" element={<States />} />
-        <Route path="*" element={<ScreensIndex />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
