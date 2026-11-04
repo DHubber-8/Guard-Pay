@@ -32,7 +32,8 @@ export const DELIVERY = {
 export const money = (v) => `$${Number(v).toFixed(2)}`;
 export const due = (h) => {
   if (h >= 999) return "–";
-  if (h < 48) return `${Math.max(h, 0)} h`;
+  if (h < 0) return "Overdue";
+  if (h < 48) return `${h} h`;
   const d = Math.round(h / 24);
   return `${d} day${d === 1 ? "" : "s"}`;
 };

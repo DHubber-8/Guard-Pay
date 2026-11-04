@@ -38,7 +38,8 @@ function Party({ title, p, rows }) {
 function AutoChecks({ c, resolved }) {
   const d = c.deliveryWatch;
   const reminder = c.audit?.find((a) => a.by === "deadline-watch");
-  const [dTone, dLabel] = resolved ? ["neutral", "Closed"] : c.deadlineHours < 24 ? ["high", "Due soon"] : ["low", "On track"];
+  const overdue = !resolved && c.deadlineHours < 0;
+  const [dTone, dLabel] = resolved ? ["neutral", "Closed"] : overdue ? ["high", "Overdue"] : c.deadlineHours < 24 ? ["high", "Due soon"] : ["low", "On track"];
   const [sTone, sLabel] = d ? DELIVERY[d.status] ?? ["neutral", d.status] : ["neutral", "No shipment"];
   return (
     <Card>
@@ -47,7 +48,7 @@ function AutoChecks({ c, resolved }) {
         <Clock size={18} />
         <div className="grow stack gap-4">
           <span className="body-strong">Deadline watch</span>
-          <span className="small text-2">{resolved ? "Case is closed. No more reminders." : `PayPal response due in ${due(c.deadlineHours)}.`}{!resolved && (reminder ? ` ${reminder.notes || "Reminder sent"}.` : c.assignee ? "" : " Nobody is assigned yet.")}</span>
+          <span className="small text-2">{resolved ? "Case is closed. No more reminders." : overdue ? "The PayPal response deadline has passed." : `PayPal response due in ${due(c.deadlineHours)}.`}{!resolved && (reminder ? ` ${reminder.notes || "Reminder sent"}.` : c.assignee ? "" : " Nobody is assigned yet.")}</span>
         </div>
         <Badge level={dTone}>{dLabel}</Badge>
       </div>
