@@ -36,8 +36,8 @@ export function toQueueRow(c) {
   const f = c.findings || {};
   const due = c.response_deadline ? new Date(c.response_deadline) : null;
   return {
-    id: c.paypal_dispute_id || String(c.id),
-    reason: c.scenario,
+    id: c.paypal_dispute_id || String(c.id ?? c.case_id),
+    reason: c.scenario || "unclassified",
     stage: f.stage || "Claim",
     merchant: f.merchant_name ?? "–",
     buyer: f.buyer_name ?? "–",
@@ -45,7 +45,7 @@ export function toQueueRow(c) {
     deadlineHours: due ? Math.round((due - Date.now()) / 36e5) : 999,
     risk: c.risk_level || "inconclusive",
     evidenceStatus: c.evidence_status || "missing",
-    status: c.status,
+    status: c.status || "Open",
     assignee: f.assignee ?? null,
     flagged: c.risk_level === "high",
   };

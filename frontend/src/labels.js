@@ -1,5 +1,6 @@
 // Display labels shared by the console screens.
 export const REASON_LABEL = {
+  unclassified: "Not classified yet",
   item_not_received: "Item not received",
   not_as_described: "Not as described",
   unauthorized: "Unauthorized transaction",

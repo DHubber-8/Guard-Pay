@@ -13,7 +13,8 @@ export default function Overview() {
   const nav = useNavigate();
   const staff = useStaff();
   const { data: cases } = useQuery({ queryKey: ["cases"], queryFn: api.getCases });
-  const { data: flags } = useQuery({ queryKey: ["flags"], queryFn: api.getFlags });
+  const { data: flagData, isError: flagsMissing } = useQuery({ queryKey: ["flags"], queryFn: api.getFlags, retry: false });
+  const flags = flagData ?? (flagsMissing ? [] : null);
   if (!cases || !flags) return <><Skeleton h={40} w={320} /><Skeleton h={110} /><Skeleton h={320} /></>;
 
   const open = cases.filter((c) => c.status !== "Resolved");
@@ -50,7 +51,7 @@ export default function Overview() {
               {mine.slice(0, 6).map((c) => (
                 <tr key={c.id} className="clickable" onClick={() => nav(`/cases/${c.id}`)}>
                   <td><Link to={`/cases/${c.id}`} className="body-strong">{c.id}</Link><div className="small muted">{c.buyer} → {c.merchant}</div></td>
-                  <td>{REASON_LABEL[c.reason]}</td>
+                  <td>{REASON_LABEL[c.reason] ?? c.reason}</td>
                   <td>{money(c.amount)}</td>
                   <td className={c.deadlineHours < 24 ? "deadline soon" : ""}>{due(c.deadlineHours)}</td>
                   <td><RiskBadge level={c.risk} /></td>
@@ -61,6 +62,7 @@ export default function Overview() {
         </Card>
         <Card>
           <div className="row between"><h2 className="h3">New flags</h2><Link to="/flags" className="link small">See all</Link></div>
+          {flags.length === 0 && <p className="small muted">No new flags.</p>}
           {flags.slice(0, 4).map((f) => (
             <Link key={f.id} to={`/checks?q=${encodeURIComponent(f.query)}`} className="flag-row">
               <Flag size={16} color={f.level === "high" ? "var(--danger)" : "var(--warn)"} style={{ marginTop: 3, flex: "none" }} />
