@@ -70,7 +70,7 @@ export default function Queue() {
         onChange={(v) => setParams(v === "all" ? {} : { view: v })}
         items={[
           { value: "all", label: `All open · ${count("all")}` },
-          { value: "mine", label: `Mine · ${count("mine")}` },
+          { value: "mine", label: `Assigned to me · ${count("mine")}` },
           { value: "due", label: `Due in 24 h · ${count("due")}` },
           { value: "high", label: `High risk · ${count("high")}` },
           { value: "waiting", label: `Waiting for info · ${count("waiting")}` },
