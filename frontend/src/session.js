@@ -1,30 +1,33 @@
+// Pretend staff sign-in for the demo. Replace with PayPal staff SSO (backend
+// session, GET /auth/me) later. Storage can be blocked, so every access is wrapped.
 import { useSyncExternalStore } from "react";
-// Pretend login for the demo. Remembers who "signed in" so back/home buttons
-// go to the right place. Replace with real auth (backend session) later.
-const KEY = "dh_role"; // "merchant" | "individual" | null
 
-export function getRole() {
-  try { return localStorage.getItem(KEY); } catch { return null; }
-}
-export function setRole(role) {
-  try { role ? localStorage.setItem(KEY, role) : localStorage.removeItem(KEY); } catch { /* storage blocked */ }
-}
-/** Where "home" is for the current visitor. */
-export function homePath() {
-  const r = getRole();
-  return r === "merchant" ? "/merchant" : r === "individual" ? "/me" : "/";
-}
-
-/* ---- PayPal connection (demo state, shared by Home and Settings) ---- */
-const PP_KEY = "dh_paypal";
+const KEY = "dh_staff";
 const listeners = new Set();
-export function isPaypalConnected() {
-  try { return localStorage.getItem(PP_KEY) !== "off"; } catch { return true; }
+const DEFAULT = { id: "staff-diana", name: "Diana R.", initials: "DR", role: "Resolution specialist" };
+
+let cached; // undefined until storage has been read; null means signed out
+function read() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 }
-export function setPaypalConnected(on) {
-  try { localStorage.setItem(PP_KEY, on ? "on" : "off"); } catch { /* storage blocked */ }
+
+export function getStaff() {
+  if (cached === undefined) cached = read();
+  return cached;
+}
+export function signIn(staff = DEFAULT) {
+  cached = staff;
+  try { localStorage.setItem(KEY, JSON.stringify(staff)); } catch { /* storage blocked */ }
   listeners.forEach((l) => l());
 }
-export function usePaypalConnected() {
-  return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, isPaypalConnected);
+export function signOut() {
+  cached = null;
+  try { localStorage.removeItem(KEY); } catch { /* storage blocked */ }
+  listeners.forEach((l) => l());
+}
+export function useStaff() {
+  return useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, getStaff);
 }

@@ -2,180 +2,181 @@
 //   const { data, isLoading } = useQuery({ queryKey: ["cases"], queryFn: api.getCases });
 //
 // Matches the FastAPI backend in /backend (routes have no /api prefix).
-// While USE_MOCK is true (default) the fake data in src/mock is returned.
+// While USE_MOCK is true (default) the demo data in src/mock/console.js is used.
 // Set VITE_USE_MOCK=false in frontend/.env to call the real backend.
+// Endpoints the backend doesn't have yet are listed in docs/FRONTEND_BACKEND_GAPS.md.
 //
-// Endpoints marked "NOT IN BACKEND YET" are what the UI needs; see
-// docs/FRONTEND_BACKEND_GAPS.md for the list handed to the backend team.
+// Everything here reads data that PayPal already holds (disputes, payments,
+// tracking, account history). Requests for more information go to the buyer
+// or merchant through PayPal, never directly.
 import { USE_MOCK, API_URL } from "../config";
-import * as mock from "../mock/data";
+import * as mock from "../mock/console";
 
-const wait = (ms = 350) => new Promise((r) => setTimeout(r, ms));
-const fake = (value) => async () => { await wait(); return value; };
-
-async function http(path, { method = "GET", body } = {}) {
+export async function http(path, { method = "GET", body } = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     method,
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     credentials: "include",
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) throw new Error(`${method} ${path} failed: ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(`${method} ${path} failed: ${res.status}`);
+    err.status = res.status;
+    throw err;
+  }
   return res.status === 204 ? null : res.json();
 }
+
+const wait = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------- Adapters: backend shape -> what the screens use ---------- */
 // backend Case (db/models.py): id, mode, scenario, status, paypal_dispute_id,
 // order_id, findings, risk_level, evidence_status, overall_assessment, response_deadline
-const SCENARIO_TYPE = (c) => (c.paypal_dispute_id ? "dispute" : c.scenario?.startsWith("risk") ? "risk" : c.scenario?.startsWith("delivery") ? "delivery" : "orderhelp");
-
-// Where each case type opens. Deliveries live on the shipments page.
-const CASE_LINK = {
-  dispute: (c) => `/merchant/disputes/${c.id}`,
-  risk: (c) => `/merchant/risk/${c.id}`,
-  orderhelp: (c) => `/merchant/cases/${c.id}`,
-  delivery: (c) => `/merchant/cases/${c.id}`,
-};
-
-export function toInboxRow(c) {
-  const type = SCENARIO_TYPE(c);
+export function toQueueRow(c) {
+  const f = c.findings || {};
   const due = c.response_deadline ? new Date(c.response_deadline) : null;
-  const hours = due ? Math.round((due - Date.now()) / 36e5) : 999;
   return {
-    id: String(c.id),
-    type,
-    title: c.overall_assessment || c.scenario,
-    buyer: c.findings?.buyer_name ?? "–",
-    order: c.findings?.order_number ?? (c.order_id ? `#${c.order_id}` : "–"),
-    amount: Number(c.findings?.amount ?? 0),
-    deadline: !due ? "–" : hours < 24 ? `${Math.max(hours, 0)} h` : `${Math.round(hours / 24)} days`,
-    deadlineHours: hours,
-    risk: c.risk_level || "inconclusive",
-    evidenceStatus: c.evidence_status,
-    status: c.status,
-    link: CASE_LINK[type](c),
-  };
-}
-
-// Findings contract (docs/FRONTEND_BACKEND_GAPS.md §1) -> FindingsPanel props
-export function toFindings(f = {}) {
-  return {
-    risk: f.risk || "inconclusive",
-    evidenceStatus: f.evidence_status || "missing",
-    rows: (f.items || []).map((i) => ({ kind: i.status || "unverified", text: i.text, detail: i.detail })),
-    action: f.suggested_action,
-  };
-}
-
-const money = (v) => (v == null || v === "" ? null : Number(v));
-
-// GET /cases/{id} -> 09 Order Help case screen
-export function toOrderHelpCase(c) {
-  const f = c.findings || {};
-  const order = f.order_number ?? (c.order_id ? `#${c.order_id}` : "–");
-  return {
-    id: String(c.id),
-    order,
-    buyer: f.buyer_name ?? "the buyer",
-    buyerEmail: c.order?.buyer_email,
-    reason: c.scenario ?? "–",
-    message: c.message ?? c.overall_assessment ?? "",
-    photos: c.evidence_items?.filter((e) => e.kind === "photo") ?? [],
-    history: (c.timeline || []).map((t) => ({ who: t.who || "AI", at: t.date, text: t.text })),
-    findings: toFindings(f),
-    offers: (c.offers || []).map((o) => ({ id: o.id ?? o.offer, title: o.title ?? o.offer, sub: o.sub ?? "", amount: money(o.amount) ?? 0, recommended: !!o.recommended })),
-    total: money(f.amount),
-    details: [["Order", order], ...(f.amount ? [["Paid", `$${Number(f.amount).toFixed(2)} via PayPal`]] : [])],
-  };
-}
-
-// GET /cases/{id} -> 10 Formal dispute screen
-export function toDispute(c) {
-  const f = c.findings || {};
-  const due = c.response_deadline ? Math.max(0, Math.round((new Date(c.response_deadline) - Date.now()) / 864e5)) : null;
-  return {
-    id: c.paypal_dispute_id ?? String(c.id),
-    order: f.order_number ?? (c.order_id ? `#${c.order_id}` : "–"),
-    buyer: f.buyer_name ?? "the buyer",
-    reason: c.scenario ?? "Dispute",
-    why: c.why,
-    amount: money(f.amount),
-    dueIn: due == null ? "–" : `${due} days`,
-    timeline: c.timeline || [],
-    evidence: (c.evidence_items || []).map((e) => ({ kind: e.status || "missing", title: e.text ?? e.title, sub: e.detail ?? e.sub ?? "" })),
-    evidenceStatus: c.evidence_status,
-    draft: c.draft ?? f.suggested_action ?? "",
-  };
-}
-
-// GET /cases/{id} -> 12 Risk alert screen
-export function toRiskCase(c) {
-  const f = c.findings || {};
-  return {
-    id: String(c.id),
-    order: f.order_number ?? (c.order_id ? `#${c.order_id}` : "–"),
+    id: c.paypal_dispute_id || String(c.id ?? c.case_id),
+    reason: c.scenario || "unclassified",
+    stage: f.stage || "Claim",
+    merchant: f.merchant_name ?? "–",
     buyer: f.buyer_name ?? "–",
-    email: c.order?.buyer_email ?? "",
-    total: money(f.amount) ?? 0,
-    items: c.order?.items ?? "–",
-    reasons: c.reasons || (f.items || []).map((i) => i.text),
-    actions: (c.actions || []).map((a) => (typeof a === "string" ? { id: a, title: a, sub: "" } : a)),
+    amount: Number(f.amount ?? 0),
+    deadlineHours: due ? Math.round((due - Date.now()) / 36e5) : 999,
+    risk: c.risk_level || "inconclusive",
+    evidenceStatus: c.evidence_status || "missing",
+    status: c.status || "Open",
+    assignee: f.assignee ?? null,
+    flagged: c.risk_level === "high",
+    delivery: f.delivery_watch?.status ?? null,
   };
 }
 
-// POST /cases/{id}/approve. Only "refund_sent" means money moved; anything else
-// (the current backend returns a stub) is reported as pending, never as sent.
-async function approve(caseId, offer) {
-  const res = await http(`/cases/${caseId}/approve`, { method: "POST", body: { offer } });
-  return { ...res, sent: res?.status === "refund_sent" };
+// Action ids drive the case page: info_buyer / info_merchant open the request-info
+// flow, and moves_money adds the "this moves money" warning. Plain strings from an
+// older backend get an id guessed from their wording.
+function toOption(a, i) {
+  if (typeof a === "object" && a) {
+    return { id: a.id ?? `a${i}`, title: a.title, sub: a.sub, movesMoney: a.moves_money, recommended: a.recommended ?? i === 0 };
+  }
+  const t = String(a);
+  const id = /ask the buyer|buyer for more/i.test(t) ? "info_buyer" : /ask the merchant|merchant for /i.test(t) ? "info_merchant" : `a${i}`;
+  return { id, title: t, recommended: i === 0 };
 }
 
-/* ---------- API ---------- */
-export const api = {
-  // Backend: GET /cases, GET /cases/{id}  (currently stubs)
-  getCases: USE_MOCK ? fake(mock.cases) : async () => (await http("/cases")).map(toInboxRow),
-  getOrderHelpCase: USE_MOCK ? fake(mock.orderHelpCase) : async (id) => toOrderHelpCase(await http(`/cases/${id}`)),
-  getDispute: USE_MOCK ? fake(mock.disputeCase) : async (id) => toDispute(await http(`/cases/${id}`)),
-  getRiskCase: USE_MOCK ? fake(mock.riskCase) : async (id) => toRiskCase(await http(`/cases/${id}`)),
+// Findings contract (docs/FRONTEND_BACKEND_GAPS.md §1) -> case workspace
+export function toCaseDetail(c) {
+  const f = c.findings || {};
+  const row = toQueueRow(c);
+  return {
+    ...row,
+    summary: f.case_summary ?? "",
+    assessment: c.overall_assessment ?? f.overall_assessment ?? "inconclusive",
+    transaction: f.transaction ?? {},
+    buyer: f.buyer ?? { name: row.buyer },
+    merchant: f.merchant ?? { name: row.merchant },
+    timeline: c.timeline ?? [],
+    evidence: [
+      ...(f.evidence_supporting || []).map((e) => ({ side: e.source, kind: e.verified ? "verified" : "unverified", text: e.description, detail: e.source })),
+      ...(f.evidence_contradicting || []).map((e) => ({ side: e.source, kind: "contradiction", text: e.description, detail: e.source })),
+      ...(f.missing_information || []).map((t) => ({ side: "missing", kind: "missing", text: t, detail: "" })),
+    ],
+    flags: (f.risk_reasons || []).map((t) => ({ level: row.risk === "high" ? "high" : "medium", text: t })),
+    options: (f.recommended_actions || []).map(toOption),
+    recommendation: f.recommendation ?? toOption(f.recommended_actions?.[0] ?? "", 0).title ?? "",
+    // Written by the A7 delivery watch worker (docs/FRONTEND_BACKEND_GAPS.md §10)
+    deliveryWatch: f.delivery_watch ? {
+      carrier: f.delivery_watch.carrier, tracking: f.delivery_watch.tracking_number, status: f.delivery_watch.status,
+      latest: f.delivery_watch.latest_event, lastChecked: f.delivery_watch.last_checked, mismatch: f.delivery_watch.mismatch,
+    } : null,
+    audit: c.audit ?? [],
+  };
+}
 
-  // Backend: POST /cases/{id}/approve, POST /cases/{id}/decline  (stubs)
-  // Money only moves after the merchant presses Confirm in the UI (docs/RULES.md).
-  approveOffer: USE_MOCK ? fake({ status: "refund_sent", sent: true }) : approve,
-  declineOffer: USE_MOCK ? fake({ ok: true }) : (caseId) => http(`/cases/${caseId}/decline`, { method: "POST" }),
-
-  // Backend: POST /order-help, GET /order-help/{order_id}  (stubs)
-  // Mock: questions the tracking data can answer get an instant answer, the rest go to the seller
-  createOrderHelp: USE_MOCK
-    ? async (p) => {
-        await wait();
-        const instant = p.reason === "not_arrived" && ["customs", "late", "stuck", "notracking"].includes(p.not_arrived_reason);
-        return instant
-          ? { id: "oh_1", type: "answer", kind: p.not_arrived_reason, tracking_steps: mock.buyerOrder.tracking_steps }
-          : { id: "oh_1", type: "sent_to_seller", reply_due: "2026-10-30T15:00:00" };
-      }
-    : (payload) => http("/order-help", { method: "POST", body: payload }),
-  getOrderHelp: USE_MOCK ? fake(mock.buyerOrder) : (orderId) => http(`/order-help/${encodeURIComponent(orderId)}`),
-  // NOT IN BACKEND YET: POST /order-help/lookup, /order-help/{id}/accept
-  lookupOrder: USE_MOCK
-    ? async ({ order_number, email }) => {
-        await wait();
-        const o = mock.buyerOrder;
-        const norm = (v) => String(v || "").trim().toLowerCase().replace(/^#/, "");
-        if (norm(order_number) !== norm(o.order) || norm(email) !== norm(o.email)) throw new Error("not_found");
-        return o;
-      }
-    : (payload) => http("/order-help/lookup", { method: "POST", body: payload }),
-  acceptOffer: USE_MOCK ? fake({ status: "resolved" }) : (id) => http(`/order-help/${encodeURIComponent(id)}/accept`, { method: "POST" }),
-
-  // NOT IN BACKEND YET: personal router has no endpoints
-  submitScamCheck: USE_MOCK ? fake({ id: "s3" }) : (payload) => http("/personal/checks", { method: "POST", body: payload }),
-  saveScamDecision: USE_MOCK ? fake({ ok: true }) : (id, decision) => http(`/personal/checks/${id}/decision`, { method: "POST", body: { decision } }),
-  getScamHistory: USE_MOCK ? fake(mock.scamHistory) : () => http("/personal/checks"),
-
-  // NOT IN BACKEND YET
-  getMerchant: USE_MOCK ? fake(mock.merchant) : () => http("/merchant"),
-  getStats: USE_MOCK ? fake(mock.stats) : () => http("/merchant/stats"),
-  getShipments: USE_MOCK ? fake(mock.shipments) : () => http("/shipments"),
-  getInsights: USE_MOCK ? fake(mock.insights) : () => http("/insights"),
-  health: () => http("/health"),
+/* ---------- Demo backend (mock mode) ---------- */
+const store = {
+  cases: mock.cases.map((c) => ({ ...c })),
+  audit: mock.auditLog.map((a) => ({ ...a })),
 };
+let auditSeq = 2000;
+const nextAuditId = () => `AL-${auditSeq++}`;
+const now = () => new Date().toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).replace(",", "");
+
+function mockDetail(id) {
+  const row = store.cases.find((c) => c.id === id);
+  if (!row) { const e = new Error("not_found"); e.status = 404; throw e; }
+  const d = mock.caseDetails[id] || {
+    summary: "No AI summary yet for this case.", assessment: "inconclusive", transaction: {}, buyer: { name: row.buyer }, merchant: { name: row.merchant },
+    timeline: [], evidence: [], flags: [], options: [{ id: "info_merchant", title: "Ask the merchant for tracking", recommended: true }], recommendation: "Consider asking for more information first.",
+  };
+  return { ...row, ...d, deliveryWatch: mock.deliveryWatch[id] ?? null, audit: store.audit.filter((a) => a.case === id) };
+}
+
+const mockApi = {
+  getCases: async () => { await wait(); return store.cases.map((c) => ({ ...c, delivery: mock.deliveryWatch[c.id]?.status ?? null })); },
+  getCase: async (id) => { await wait(); return mockDetail(id); },
+  requestInfo: async (id, { party, message, approverId }) => {
+    await wait(500);
+    const c = store.cases.find((x) => x.id === id);
+    c.status = party === "buyer" ? "Waiting for buyer" : "Waiting for merchant";
+    store.audit.unshift({ id: nextAuditId(), at: now(), case: id, action: `Request info from ${party}`, ai: "–", decision: "Sent via PayPal", by: approverId ?? "staff-diana", notes: message.slice(0, 80) });
+    return { status: "sent", via: "paypal" };
+  },
+  decide: async (id, { action, aiRecommendation, decision, notes, approverId }) => {
+    await wait(600);
+    if (!approverId) throw new Error("approver_required");
+    const c = store.cases.find((x) => x.id === id);
+    c.status = "Resolved";
+    store.audit.unshift({ id: nextAuditId(), at: now(), case: id, action, ai: aiRecommendation, decision, by: approverId, notes });
+    return { status: "recorded" };
+  },
+  assign: async (id, staffId) => { await wait(200); store.cases.find((x) => x.id === id).assignee = staffId; return { ok: true }; },
+  getFlags: async () => { await wait(); return mock.flags; },
+  checkAccount: async (q) => {
+    await wait(500);
+    const key = Object.keys(mock.checks).find((k) => k.toLowerCase() === String(q).trim().toLowerCase());
+    if (!key) { const e = new Error("not_found"); e.status = 404; throw e; }
+    return mock.checks[key];
+  },
+  getInsights: async () => { await wait(); return mock.insights; },
+  getAuditLog: async () => { await wait(); return store.audit; },
+  getWatchStatus: async () => { await wait(); return mock.watchStatus; },
+};
+
+/* ---------- Real backend ---------- */
+const realApi = {
+  // Backend: GET /cases, GET /cases/{id}  (stubs today)
+  getCases: async () => (await http("/cases")).map(toQueueRow),
+  getCase: async (id) => toCaseDetail(await http(`/cases/${encodeURIComponent(id)}`)),
+  // NOT IN BACKEND YET: PayPal sends the request to the buyer or merchant
+  // (paypal/disputes.py send_message needs approver_id).
+  // Only report success when the backend says it sent the request (today's stubs don't).
+  requestInfo: async (id, { party, message, approverId }) => {
+    const res = await http(`/cases/${encodeURIComponent(id)}/request-info`, {
+      method: "POST",
+      body: { party, message, approver_id: approverId },
+    });
+    if (res?.status !== "sent") throw new Error("request_not_sent");
+    return res;
+  },
+  // Backend: POST /cases/{id}/approve (stub). Writes Approval + AuditLog rows.
+  // The current stub answers 200 with {"status": "stub"}, so only "recorded" counts as saved.
+  decide: async (id, body) => {
+    const res = await http(`/cases/${encodeURIComponent(id)}/approve`, {
+      method: "POST",
+      body: { action_type: body.action, action_id: body.actionId, approver_id: body.approverId, decision: body.decision, ai_recommendation: body.aiRecommendation, notes: body.notes },
+    });
+    if (res?.status !== "recorded") throw new Error("decision_not_saved");
+    return res;
+  },
+  // NOT IN BACKEND YET
+  assign: (id, staffId) => http(`/cases/${encodeURIComponent(id)}/assign`, { method: "POST", body: { staff_id: staffId } }),
+  getFlags: () => http("/flags"),
+  checkAccount: (q) => http(`/checks?q=${encodeURIComponent(q)}`),
+  getInsights: () => http("/insights"),
+  getAuditLog: () => http("/audit-log"),
+  // NOT IN BACKEND YET: when the A7 workers last ran
+  getWatchStatus: () => http("/workers/status"),
+};
+
+export const api = { ...(USE_MOCK ? mockApi : realApi), health: () => http("/health") };
