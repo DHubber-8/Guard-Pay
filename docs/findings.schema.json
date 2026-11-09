@@ -1,0 +1,146 @@
+{
+  "$defs": {
+    "FindingItem": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "unverified",
+            "missing",
+            "contradiction"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        }
+      },
+      "required": [
+        "text",
+        "status"
+      ],
+      "title": "FindingItem",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "risk": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "inconclusive"
+      ],
+      "title": "Risk",
+      "type": "string"
+    },
+    "evidence_status": {
+      "enum": [
+        "complete",
+        "partial",
+        "missing"
+      ],
+      "title": "Evidence Status",
+      "type": "string"
+    },
+    "items": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/FindingItem"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Items"
+    },
+    "suggested_action": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Suggested Action"
+    },
+    "order_number": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Order Number"
+    },
+    "buyer_name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Buyer Name"
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "pattern": "^\\d+(?:\\.\\d{2})?$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Amount"
+    },
+    "currency": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Z]{3}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Currency"
+    }
+  },
+  "required": [
+    "risk",
+    "evidence_status"
+  ],
+  "title": "Findings",
+  "type": "object"
+}

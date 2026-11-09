@@ -18,6 +18,17 @@ class Base(DeclarativeBase):
     """Base class for all database models."""
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16))
+    password_hash: Mapped[str] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -33,6 +44,26 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     cases: Mapped[list[Case]] = relationship(back_populates="order")
+    shipments: Mapped[list[Shipment]] = relationship(back_populates="order")
+
+
+class Shipment(Base):
+    __tablename__ = "shipments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    carrier: Mapped[str] = mapped_column(String(128), nullable=False)
+    tracking_number: Mapped[str] = mapped_column(String(128), nullable=False)
+    shipped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    drafted_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    order: Mapped[Order] = relationship(back_populates="shipments")
 
 
 class Case(Base):

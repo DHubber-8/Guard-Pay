@@ -71,7 +71,7 @@ def test_seed_is_idempotent_and_preserves_verified_flags() -> None:
 
 def test_fixtures_contain_required_scenario_details() -> None:
     fixture = json.loads(
-        (Path(__file__).parent / "fixtures" / "damaged_hand_cream.json").read_text(
+        (FIXTURE_DIR / "damaged_hand_cream.json").read_text(
             encoding="utf-8"
         )
     )

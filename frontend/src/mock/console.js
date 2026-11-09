@@ -21,6 +21,19 @@ const B = {
   morgan: { name: "Morgan Unrecognised", email: "dh-buyer-7@personal.example.com", since: "Apr 2017", disputes90d: 0, country: "US" },
 };
 
+// Shared synthetic Order Help and personal-check examples used by the buyer demo.
+export const demoOrders = [
+  { orderNumber: "1032", buyer: "Alex Newbuyer", email: B.alex.email, trackingSteps: [{ status: "delivered", text: "Package delivered" }] },
+  { orderNumber: "1045", buyer: "Sam Repeat", email: B.sam.email, trackingSteps: [{ status: "in_transit", text: "Package accepted at carrier facility" }] },
+  { orderNumber: "1051", buyer: "Jordan Claims", email: B.jordan.email, trackingSteps: [{ status: "stuck", text: "No scan for 7 days" }] },
+  { orderNumber: "1066", buyer: "Taylor Frequent", email: B.taylor.email, trackingSteps: [{ status: "notracking", text: "No tracking number is available yet." }] },
+];
+
+export const personalCheckSamples = [
+  { description: "A sender urgently asks for a password.", linkOrSender: "unknown@example.test", answers: ["I have not shared anything."] },
+  { description: "A message asks for a gift card payment.", linkOrSender: "urgent@example.test", answers: ["It says I must act today."] },
+];
+
 
 // Queue rows. deadlineHours = time left before PayPal's response deadline.
 export const cases = [

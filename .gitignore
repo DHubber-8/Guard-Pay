@@ -11,3 +11,4 @@ dist/
 build/
 coverage/
 *.egg-info/
+backend/scripts/out/
