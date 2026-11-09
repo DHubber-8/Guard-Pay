@@ -126,37 +126,36 @@ async def refund_capture(
             "Explicit approval is required: provide both approver_id and case_id."
         )
 
-    capture = await get_capture(capture_id, client)
-    if capture.status not in {"COMPLETED", "PARTIALLY_REFUNDED"}:
-        raise RefundNotAllowedError(
-            f"Capture {capture_id} is not refundable in state {capture.status!r}."
-        )
-
-    remaining = capture.remaining_refundable_amount
-    requested = remaining if amount is None else _decimal(amount)
-    if requested <= 0:
-        raise RefundNotAllowedError("Refund amount must be greater than zero.")
-    if requested > remaining:
-        raise RefundNotAllowedError(
-            f"Refund amount {requested} exceeds the remaining refundable amount {remaining}."
-        )
-    if currency is not None and currency != capture.currency:
-        raise RefundNotAllowedError(
-            f"Refund currency {currency!r} does not match capture currency {capture.currency!r}."
-        )
-
-    body: dict[str, Any] = {}
-    if amount is not None:
-        body["amount"] = {
-            "value": amount,
-            "currency_code": currency or capture.currency,
-        }
-    if note is not None:
-        body["note_to_payer"] = note
-
     owned_client = client is None
     paypal = client or PayPalClient()
     try:
+        capture = await get_capture(capture_id, paypal)
+        if capture.status not in {"COMPLETED", "PARTIALLY_REFUNDED"}:
+            raise RefundNotAllowedError(
+                f"Capture {capture_id} is not refundable in state {capture.status!r}."
+            )
+
+        remaining = capture.remaining_refundable_amount
+        requested = remaining if amount is None else _decimal(amount)
+        if requested <= 0:
+            raise RefundNotAllowedError("Refund amount must be greater than zero.")
+        if requested > remaining:
+            raise RefundNotAllowedError(
+                f"Refund amount {requested} exceeds the remaining refundable amount {remaining}."
+            )
+        if currency is not None and currency != capture.currency:
+            raise RefundNotAllowedError(
+                f"Refund currency {currency!r} does not match capture currency {capture.currency!r}."
+            )
+
+        body: dict[str, Any] = {}
+        if amount is not None:
+            body["amount"] = {
+                "value": amount,
+                "currency_code": currency or capture.currency,
+            }
+        if note is not None:
+            body["note_to_payer"] = note
         response = await paypal.request(
             "POST",
             f"/v2/payments/captures/{capture_id}/refund",

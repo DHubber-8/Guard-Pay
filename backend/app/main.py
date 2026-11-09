@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings, settings
 from app.db.session import SessionLocal, get_db
 from app.mocks import carrier
+from app.paypal.client import PayPalClient
 from app.routes import (
     admin,
     approvals,
@@ -41,6 +42,12 @@ def create_app(config: Settings = settings) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
+        paypal_client = PayPalClient(
+            base_url=config.paypal_base_url,
+            client_id=config.paypal_client_id,
+            client_secret=config.paypal_client_secret,
+        )
+        application.state.paypal_client = paypal_client
         worker_task: asyncio.Task[None] | None = None
         if config.workers_enabled:
             async def worker_loop() -> None:
@@ -55,6 +62,7 @@ def create_app(config: Settings = settings) -> FastAPI:
             if worker_task is not None:
                 worker_task.cancel()
                 await asyncio.gather(worker_task, return_exceptions=True)
+            await paypal_client.aclose()
 
     def _run_delivery_watch_once() -> None:
         with SessionLocal() as db:
