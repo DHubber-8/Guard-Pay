@@ -1,0 +1,56 @@
+{
+  "info": {
+    "_postman_id": "1d34f3cb-1d5e-4e8d-9f7d-9d8b7b2b0003",
+    "name": "dispute-helper-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "caseId", "value": "" }
+  ],
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" } },
+    { "name": "Health ready", "request": { "method": "GET", "url": "{{baseUrl}}/health/ready" } },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Requested-With", "value": "XMLHttpRequest" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } },
+    { "name": "Cases list", "request": { "method": "GET", "url": "{{baseUrl}}/cases?limit=50&offset=0" } },
+    { "name": "Case detail", "request": { "method": "GET", "url": "{{baseUrl}}/cases/{{caseId}}" } },
+    {
+      "name": "Approve case",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Requested-With", "value": "XMLHttpRequest" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"offer\": \"replace\",\n  \"amount\": \"0.00\",\n  \"message\": \"Replace after reviewing the case.\"\n}" },
+        "url": "{{baseUrl}}/cases/{{caseId}}/approve"
+      }
+    },
+    {
+      "name": "Decline case",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Requested-With", "value": "XMLHttpRequest" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"offer\": \"replace\",\n  \"amount\": \"0.00\",\n  \"message\": \"Declined after review.\"\n}" },
+        "url": "{{baseUrl}}/cases/{{caseId}}/decline"
+      }
+    },
+    {
+      "name": "Order-help lookup",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "X-Requested-With", "value": "XMLHttpRequest" }, { "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"order_number\": \"\",\n  \"email\": \"\"\n}" },
+        "url": "{{baseUrl}}/order-help/lookup"
+      }
+    },
+    { "name": "Shipments", "request": { "method": "GET", "url": "{{baseUrl}}/shipments" } }
+  ]
+}
