@@ -37,6 +37,10 @@ services:
         sync: false
       - key: ADMIN_TOKEN
         sync: false
+      - key: WORKERS_ENABLED
+        value: "false"
+      - key: WORKERS_INTERVAL_SECONDS
+        value: "300"
 
 databases:
   - name: dispute-helper-db
