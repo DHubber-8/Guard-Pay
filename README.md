@@ -1,6 +1,9 @@
 <!-- Owner: Digant; Status: in progress -->
 # PayPalSupport
 
+[Judge demo instructions](docs/DEMO.md) — hosted URL, three-minute walkthrough,
+credential-free local setup, environment variables, and troubleshooting.
+
 AI assistant for PayPal staff who resolve disputes. Disputes arrive from PayPal (webhooks and the Disputes API); the system pulls the order, tracking, evidence and account history from PayPal, flags anything suspicious, and suggests a resolution. Staff can also check any account or transaction for fraud signals. A person makes every decision, and every decision is logged.
 
 ## Structure
@@ -157,6 +160,7 @@ The hosted equivalent is `POST /admin/reseed-demo`, protected by
 rows and preserves real PayPal disputes and audit history.
 
 Important environment variables include `DATABASE_URL`, `ENV`,
+`DEMO_MODE` (local simulated PayPal reads/refunds),
 `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`,
 `PAYPAL_BASE_URL`, `FRONTEND_ORIGIN`, `CARRIER_API_BASE_URL`, `SESSION_SECRET`,
 `SESSION_TTL_SECONDS`, `ADMIN_TOKEN`, `WORKERS_ENABLED`, and
