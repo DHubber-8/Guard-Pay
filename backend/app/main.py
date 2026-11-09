@@ -2,13 +2,17 @@
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.config import Settings, settings
+from app.db.session import get_db
 from app.mocks import carrier
-from app.routes import approvals, auth, cases, order_help, personal, webhooks
+from app.routes import admin, approvals, auth, cases, order_help, personal, webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -53,20 +57,30 @@ def create_app(config: Settings = settings) -> FastAPI:
         return await call_next(request)
 
     application.include_router(auth.router)
+    application.include_router(admin.router)
     application.include_router(webhooks.router)
     application.include_router(order_help.router)
     application.include_router(cases.router)
     application.include_router(approvals.router)
     application.include_router(personal.router)
     application.include_router(carrier.router)
+
+    @application.get("/health")
+    def health() -> dict[str, str]:
+        """Return service liveness."""
+        return {"status": "ok"}
+
+    @application.get("/health/ready", response_model=None)
+    def readiness(db: Session = Depends(get_db)) -> dict[str, str] | JSONResponse:
+        """Check database readiness without changing the liveness endpoint."""
+        try:
+            db.execute(text("SELECT 1"))
+        except SQLAlchemyError as exc:
+            logger.error("Readiness database check failed: %s", exc)
+            return JSONResponse(status_code=503, content={"status": "unready"})
+        return {"status": "ready"}
+
     return application
 
 
 app = create_app()
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    """Return service health."""
-    # TODO: Add dependency health checks.
-    return {"status": "ok"}
