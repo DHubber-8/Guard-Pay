@@ -1,8 +1,14 @@
 """Merchant approval routes."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/cases", tags=["approvals"])
+from app.auth import require_user
+
+router = APIRouter(
+    prefix="/cases",
+    tags=["approvals"],
+    dependencies=[Depends(require_user("merchant"))],
+)
 
 
 @router.post("/{case_id}/approve")

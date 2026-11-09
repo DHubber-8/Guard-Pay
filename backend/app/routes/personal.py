@@ -2,6 +2,8 @@
 # Task: A6 | Area: A | Owner: TBD | Status: not started
 # TODO: Add routes for personal payment checks and findings.
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/personal", tags=["personal"])
+from app.auth import require_user
+
+router = APIRouter(prefix="/personal", tags=["personal"], dependencies=[Depends(require_user())])
