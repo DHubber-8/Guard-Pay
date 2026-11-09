@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings, settings
 from app.db.session import get_db
+from app.workers.deadlines import run_once as run_deadlines
 from app.workers.delivery_watch import run_once
 from scripts.seed_demo import clear_seeded_demo, seed_demo
 
@@ -42,4 +43,6 @@ def run_workers(
         raise HTTPException(status_code=404, detail="Not found")
     if not x_admin_token or not hmac.compare_digest(x_admin_token, config.admin_token):
         raise HTTPException(status_code=403, detail="Invalid admin token")
-    return {"status": "completed", "updated": run_once(db, config)}
+    updated = run_once(db, config)
+    updated += run_deadlines(db)
+    return {"status": "completed", "updated": updated}
