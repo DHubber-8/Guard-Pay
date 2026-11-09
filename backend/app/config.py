@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     demo_merchant_password: str = ""
     demo_individual_password: str = ""
     admin_token: str = ""
+    workers_enabled: bool = False
+    workers_interval_seconds: int = 300
 
     @property
     def frontend_origins(self) -> list[str]:
