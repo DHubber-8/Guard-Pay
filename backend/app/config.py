@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 86400
     demo_merchant_password: str = ""
     demo_individual_password: str = ""
+    admin_token: str = ""
 
     @property
     def frontend_origins(self) -> list[str]:

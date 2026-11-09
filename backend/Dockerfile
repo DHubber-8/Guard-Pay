@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --shell /usr/sbin/nologin appuser
 
 COPY app ./app
+COPY scripts ./scripts
 COPY alembic.ini .
 COPY alembic ./alembic
 

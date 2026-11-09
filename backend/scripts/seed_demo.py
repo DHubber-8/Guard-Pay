@@ -22,7 +22,7 @@ from app.config import Settings, settings
 from app.auth import hash_password
 from app.db.models import Base, Case, EvidenceItem, Order, User
 
-FIXTURE_DIR = BACKEND_DIR / "tests" / "fixtures"
+FIXTURE_DIR = BACKEND_DIR / "app" / "fixtures"
 FIXTURE_NAMES = ("damaged_hand_cream.json", "damaged_hand_cream_weak.json")
 
 
@@ -47,10 +47,12 @@ def seed_fixture(db: Session, fixture: dict[str, Any]) -> Case:
             buyer_reference=fixture["fixture_id"],
             tracking_number=fixture["tracking_number"],
             carrier=fixture["carrier"],
-            raw=fixture,
+            raw={**fixture, "seed": True},
         )
         db.add(order)
         db.flush()
+    elif isinstance(order.raw, dict):
+        order.raw = {**order.raw, "seed": True}
 
     case = (
         db.query(Case)
@@ -64,6 +66,7 @@ def seed_fixture(db: Session, fixture: dict[str, Any]) -> Case:
             status="open",
             order=order,
             findings={
+                "seed": True,
                 "fixture_id": fixture["fixture_id"],
                 "seller": fixture["seller"],
                 "item": fixture["item"],
@@ -80,6 +83,8 @@ def seed_fixture(db: Session, fixture: dict[str, Any]) -> Case:
         )
         db.add(case)
         db.flush()
+    else:
+        case.findings = {**(case.findings or {}), "seed": True}
 
     existing = {(item.description, item.source) for item in case.evidence_items}
     for evidence in fixture["evidence"]:
@@ -94,6 +99,28 @@ def seed_fixture(db: Session, fixture: dict[str, Any]) -> Case:
                 )
             )
     return case
+
+
+def clear_seeded_demo(db: Session) -> None:
+    """Remove only synthetic seeded cases and orders, preserving audit data."""
+    seeded_cases = (
+        db.query(Case)
+        .filter(Case.paypal_dispute_id.is_(None))
+        .all()
+    )
+    for case in seeded_cases:
+        if (case.findings or {}).get("seed") is not True:
+            continue
+        if case.approvals or case.audit_logs:
+            continue
+        db.delete(case)
+    db.flush()
+    for order in db.query(Order).all():
+        if not (order.raw or {}).get("seed") is True:
+            continue
+        if order.cases:
+            continue
+        db.delete(order)
 
 
 def seed_demo_user(db: Session, email: str, name: str, role: str, password: str) -> User:
