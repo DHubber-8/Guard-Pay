@@ -1,4 +1,8 @@
 from decimal import Decimal
+import os
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 from sqlalchemy import create_engine
@@ -79,6 +83,109 @@ def test_approval_requires_approver(db: Session) -> None:
     db.add(approval)
     with pytest.raises(IntegrityError):
         db.commit()
+
+
+def test_paypal_identifiers_are_unique_but_nullable_dispute_id(db: Session) -> None:
+    first_order = Order(
+        paypal_order_id="ORDER-UNIQUE",
+        amount=Decimal("10.00"),
+        currency="USD",
+        status="COMPLETED",
+        buyer_reference="buyer-1",
+        raw={},
+    )
+    db.add(first_order)
+    db.commit()
+
+    duplicate_order = Order(
+        paypal_order_id="ORDER-UNIQUE",
+        amount=Decimal("11.00"),
+        currency="USD",
+        status="COMPLETED",
+        buyer_reference="buyer-2",
+        raw={},
+    )
+    db.add(duplicate_order)
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
+
+    first_case = Case(
+        mode="merchant",
+        scenario="dispute",
+        status="OPEN",
+        paypal_dispute_id="DISPUTE-UNIQUE",
+        findings={},
+        risk_level="unknown",
+        evidence_status="missing",
+        overall_assessment="Pending",
+    )
+    db.add(first_case)
+    db.commit()
+    duplicate_case = Case(
+        mode="merchant",
+        scenario="dispute",
+        status="OPEN",
+        paypal_dispute_id="DISPUTE-UNIQUE",
+        findings={},
+        risk_level="unknown",
+        evidence_status="missing",
+        overall_assessment="Pending",
+    )
+    db.add(duplicate_case)
+    with pytest.raises(IntegrityError):
+        db.commit()
+    db.rollback()
+
+    db.add_all(
+        [
+            Case(
+                mode="merchant",
+                scenario="dispute",
+                status="OPEN",
+                findings={},
+                risk_level="unknown",
+                evidence_status="missing",
+                overall_assessment="Pending",
+            ),
+            Case(
+                mode="merchant",
+                scenario="dispute",
+                status="OPEN",
+                findings={},
+                risk_level="unknown",
+                evidence_status="missing",
+                overall_assessment="Pending",
+            ),
+        ]
+    )
+    db.commit()
+
+
+def test_webhook_migration_applies_from_previous_head_on_sqlite(tmp_path: Path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'migration.sqlite'}"
+    repository_root = Path(__file__).resolve().parents[2]
+    script = (
+        "import sys; "
+        "from alembic.config import Config; "
+        "from alembic import command; "
+        f"sys.path.insert(0, {str(repository_root / 'backend')!r}); "
+        "config = Config('backend/alembic.ini'); "
+        f"config.set_main_option('script_location', {str(repository_root / 'backend' / 'alembic')!r}); "
+        "command.upgrade(config, '20261110_0003'); "
+        "command.upgrade(config, 'head')"
+    )
+    environment = os.environ.copy()
+    environment["DATABASE_URL"] = database_url
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repository_root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_empty_database_url_uses_named_sqlite_fallback(caplog: pytest.LogCaptureFixture) -> None:

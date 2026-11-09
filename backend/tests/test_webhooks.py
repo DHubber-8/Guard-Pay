@@ -111,6 +111,25 @@ def test_duplicate_event_is_noop(
     assert db.query(AuditLog).count() == 1
 
 
+def test_different_events_for_same_dispute_share_one_case(
+    client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _mock_paypal(monkeypatch, "SUCCESS")
+
+    first = client.post("/webhooks/paypal", headers=_headers(), json=_event("event-1"))
+    second = client.post(
+        "/webhooks/paypal",
+        headers=_headers(),
+        json=_event("event-2", event_type="CUSTOMER.DISPUTE.UPDATED"),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert db.query(Case).count() == 1
+    assert db.query(AuditLog).count() == 2
+    assert {audit.event_id for audit in db.query(AuditLog).all()} == {"event-1", "event-2"}
+
+
 def test_failed_verification_writes_nothing(
     client: TestClient, db: Session, monkeypatch: pytest.MonkeyPatch
 ) -> None:
