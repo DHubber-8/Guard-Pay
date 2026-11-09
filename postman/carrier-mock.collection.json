@@ -1,0 +1,20 @@
+{
+  "info": {
+    "_postman_id": "1d34f3cb-1d5e-4e8d-9f7d-9d8b7b2b0002",
+    "name": "carrier-mock",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "" }],
+  "item": [
+    {
+      "name": "Tracking examples",
+      "item": [
+        { "name": "DELIVERED", "request": { "method": "GET", "url": "{{baseUrl}}/mock-carrier/tracking/DELIVERED" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('mock response', function () { pm.expect(pm.response.json().mock).to.eql(true); });"] } }] },
+        { "name": "IN_TRANSIT", "request": { "method": "GET", "url": "{{baseUrl}}/mock-carrier/tracking/IN_TRANSIT" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('mock response', function () { pm.expect(pm.response.json().mock).to.eql(true); });"] } }] },
+        { "name": "STUCK-5", "request": { "method": "GET", "url": "{{baseUrl}}/mock-carrier/tracking/STUCK-5" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('mock response', function () { pm.expect(pm.response.json().mock).to.eql(true); });"] } }] },
+        { "name": "LOST", "request": { "method": "GET", "url": "{{baseUrl}}/mock-carrier/tracking/LOST" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('mock response', function () { pm.expect(pm.response.json().mock).to.eql(true); });"] } }] },
+        { "name": "DELIVERED-72H", "request": { "method": "GET", "url": "{{baseUrl}}/mock-carrier/tracking/DELIVERED-72H" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('mock response', function () { pm.expect(pm.response.json().mock).to.eql(true); });"] } }] }
+      ]
+    }
+  ]
+}

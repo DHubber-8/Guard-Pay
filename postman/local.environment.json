@@ -1,0 +1,16 @@
+{
+  "id": "1d34f3cb-1d5e-4e8d-9f7d-9d8b7b2b0004",
+  "name": "local",
+  "values": [
+    { "key": "baseUrl", "value": "", "type": "default", "enabled": true },
+    { "key": "clientId", "value": "", "type": "secret", "enabled": true },
+    { "key": "clientSecret", "value": "", "type": "secret", "enabled": true },
+    { "key": "accessToken", "value": "", "type": "secret", "enabled": true },
+    { "key": "orderId", "value": "", "type": "default", "enabled": true },
+    { "key": "captureId", "value": "", "type": "default", "enabled": true },
+    { "key": "disputeId", "value": "", "type": "default", "enabled": true },
+    { "key": "adminToken", "value": "", "type": "secret", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_using": "Postman"
+}
