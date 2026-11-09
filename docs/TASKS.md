@@ -26,11 +26,10 @@ Priority: Must / Should / Nice.
 | B7 | B | Draft dispute responses | agents/drafter.py | S1 | Must | Proposed | TBD | |
 | B8 | B | Wire the shared pipeline | pipeline.py | B1, B3, B4, B5 | Must | Proposed | TBD | |
 | B9 | B | Add optional similar-case search | search/ | A5 | Nice | Proposed | TBD | |
-| C1 | C | Add app shell, routing, API client, and home | frontend/src (App.jsx, api/, layouts/, components/, styles/) | S1 | Must | In review | Diana | |
-| C2 | C | Add buyer Order Help screens | pages/orderhelp/ | C1 | Must | In review | Diana | |
-| C3 | C | Add merchant inbox | pages/merchant/Inbox.jsx | C1 | Must | In review | Diana | |
-| C4 | C | Add case view and findings panel | pages/merchant/Cases.jsx, components/FindingsPanel.jsx | S1, C1 | Must | In review | Diana | |
-| C5 | C | Add personal mode screens | pages/individual/, pages/scam/ | C1, S1 | Should | In review | Diana | |
-| C6 | C | Add merchant setup screen | pages/onboarding/, pages/merchant/More.jsx | C1 | Nice | In review | Diana | |
+| C1 | C | App shell, routing, API client (superseded by C7) | frontend/src | S1 | Must | Done | Diana | |
+| C2-C6 | C | Merchant, buyer and personal screens (removed in C7: product now serves PayPal staff) | pages/ | C1 | - | Done | Diana | |
+| C7 | C | Staff console: layout, sign-in, overview, dispute queue, case workspace | layouts/ConsoleLayout.jsx, pages/console/ | S1 | Must | In review | Diana | |
+| C8 | C | Account and transaction check, flags, insights, audit log | pages/console/ | C7 | Must | In review | Diana | |
+| C9 | C | Connect the console to the real backend (switch VITE_USE_MOCK off, adjust adapters) | api/index.js | A6, C7 | Must | Proposed | TBD | |
 | P1 | P | Add Postman collections and environment | postman/ | A1 | Should | Proposed | TBD | |
 | D1 | D | Add rules, README, and demo docs | docs/ | none | Should | Proposed | TBD | |
