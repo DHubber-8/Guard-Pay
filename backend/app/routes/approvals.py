@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,7 @@ from app.db.models import Agreement, Approval, AuditLog, Case, Offer, Order, Use
 from app.db.session import get_db
 from app.paypal import refunds
 from app.paypal.client import PayPalError
+from app.config import Settings, settings
 from app.rules.approval_policy import validate_offer
 from app.schemas.approvals import ApprovalRequest, ApprovalResponse
 from app.schemas.findings import Findings
@@ -30,8 +31,17 @@ async def perform_refund(
     note: str | None,
     approver_id: str,
     case_id: int,
+    config: Settings = settings,
 ) -> refunds.RefundResult:
     """Perform a PayPal refund after the approval transaction commits."""
+    if config.demo_mode:
+        return refunds.RefundResult.model_validate(
+            {
+                "refund_id": f"SIMULATED-{capture_id}",
+                "status": "COMPLETED",
+                "simulated": True,
+            }
+        )
     return await refunds.refund_capture(
         capture_id,
         amount,
@@ -42,8 +52,22 @@ async def perform_refund(
     )
 
 
-def refund_dependency() -> RefundPerformer:
-    return perform_refund
+def refund_dependency(request: Request) -> RefundPerformer:
+    config = getattr(request.app.state, "settings", settings)
+
+    async def configured_refund(
+        capture_id: str,
+        amount: str,
+        currency: str,
+        note: str | None,
+        approver_id: str,
+        case_id: int,
+    ) -> refunds.RefundResult:
+        return await perform_refund(
+            capture_id, amount, currency, note, approver_id, case_id, config
+        )
+
+    return configured_refund
 
 
 def _case_amount(case: Case) -> Decimal:
@@ -158,6 +182,7 @@ async def approve_case(
             decision="approve",
             status=case.status,
             refund_id=None,
+            simulated=False,
         )
 
     if case.order is None:
@@ -191,7 +216,7 @@ async def approve_case(
             type="refund",
             amount=amount,
             status="sent",
-            details={"refund_id": result.refund_id},
+            details={"refund_id": result.refund_id, "simulated": result.simulated},
             created_at=_now(),
             updated_at=_now(),
         )
@@ -201,7 +226,11 @@ async def approve_case(
             case=case,
             actor=str(user.id),
             event="refund.sent",
-            details={"refund_id": result.refund_id, "amount": str(amount)},
+            details={
+                "refund_id": result.refund_id,
+                "amount": str(amount),
+                "simulated": result.simulated,
+            },
             created_at=_now(),
         )
     )
@@ -211,6 +240,7 @@ async def approve_case(
         decision="approve",
         status=case.status,
         refund_id=result.refund_id,
+        simulated=result.simulated,
     )
 
 

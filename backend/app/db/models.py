@@ -73,7 +73,9 @@ class Case(Base):
     mode: Mapped[str] = mapped_column(String(16))
     scenario: Mapped[str] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32))
-    paypal_dispute_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    paypal_dispute_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True, index=True
+    )
     order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
     findings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     risk_level: Mapped[str] = mapped_column(String(16))
@@ -171,6 +173,9 @@ class AuditLog(Base):
     case_id: Mapped[int | None] = mapped_column(ForeignKey("cases.id"), nullable=True)
     actor: Mapped[str] = mapped_column(String(128))
     event: Mapped[str] = mapped_column(String(128))
+    event_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True, index=True
+    )
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
