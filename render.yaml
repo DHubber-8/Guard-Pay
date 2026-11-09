@@ -21,7 +21,15 @@ services:
         sync: false
       - key: PAYPAL_WEBHOOK_ID
         sync: false
+      - key: SESSION_SECRET
+        generateValue: true
       - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: DEMO_MODE
+        value: "false"
+      - key: DEMO_MERCHANT_PASSWORD
+        sync: false
+      - key: DEMO_INDIVIDUAL_PASSWORD
         sync: false
       - key: PAYPAL_REPORT_URL
         sync: false
