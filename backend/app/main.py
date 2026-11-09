@@ -1,6 +1,8 @@
 """FastAPI application entry point."""
 
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -10,9 +12,19 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import Settings, settings
-from app.db.session import get_db
+from app.db.session import SessionLocal, get_db
 from app.mocks import carrier
-from app.routes import admin, approvals, auth, cases, order_help, personal, webhooks
+from app.routes import (
+    admin,
+    approvals,
+    auth,
+    cases,
+    order_help,
+    personal,
+    shipments,
+    webhooks,
+)
+from app.workers.delivery_watch import run_once
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +39,28 @@ def create_app(config: Settings = settings) -> FastAPI:
             "configure the deployed frontend URL."
         )
 
-    application = FastAPI(title="dispute-helper API")
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        worker_task: asyncio.Task[None] | None = None
+        if config.workers_enabled:
+            async def worker_loop() -> None:
+                while True:
+                    await asyncio.to_thread(_run_delivery_watch_once)
+                    await asyncio.sleep(config.workers_interval_seconds)
+
+            worker_task = asyncio.create_task(worker_loop())
+        try:
+            yield
+        finally:
+            if worker_task is not None:
+                worker_task.cancel()
+                await asyncio.gather(worker_task, return_exceptions=True)
+
+    def _run_delivery_watch_once() -> None:
+        with SessionLocal() as db:
+            run_once(db, config)
+
+    application = FastAPI(title="dispute-helper API", lifespan=lifespan)
     application.state.settings = config
     application.add_middleware(
         CORSMiddleware,
@@ -63,6 +96,7 @@ def create_app(config: Settings = settings) -> FastAPI:
     application.include_router(cases.router)
     application.include_router(approvals.router)
     application.include_router(personal.router)
+    application.include_router(shipments.router)
     application.include_router(carrier.router)
 
     @application.get("/health")
