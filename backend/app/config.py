@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     carrier_api_base_url: str = ""
     elastic_url: str = ""
     elastic_api_key: str = ""
+    session_secret: str = ""
+    session_ttl_seconds: int = 86400
+    demo_merchant_password: str = ""
+    demo_individual_password: str = ""
 
     @property
     def frontend_origins(self) -> list[str]:

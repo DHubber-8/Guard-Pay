@@ -1,8 +1,10 @@
 """Merchant case routes."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-router = APIRouter(prefix="/cases", tags=["cases"])
+from app.auth import require_user
+
+router = APIRouter(prefix="/cases", tags=["cases"], dependencies=[Depends(require_user("merchant"))])
 
 
 @router.get("")

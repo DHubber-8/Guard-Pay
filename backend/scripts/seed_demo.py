@@ -19,7 +19,8 @@ sys.path.insert(0, str(BACKEND_DIR))
 from sqlalchemy.orm import Session
 
 from app.config import Settings, settings
-from app.db.models import Base, Case, EvidenceItem, Order
+from app.auth import hash_password
+from app.db.models import Base, Case, EvidenceItem, Order, User
 
 FIXTURE_DIR = BACKEND_DIR / "tests" / "fixtures"
 FIXTURE_NAMES = ("damaged_hand_cream.json", "damaged_hand_cream_weak.json")
@@ -95,6 +96,20 @@ def seed_fixture(db: Session, fixture: dict[str, Any]) -> Case:
     return case
 
 
+def seed_demo_user(db: Session, email: str, name: str, role: str, password: str) -> User:
+    """Create one synthetic demo user when its password was explicitly supplied."""
+    user = db.query(User).filter(User.email == email).one_or_none()
+    if user is None:
+        user = User(
+            email=email,
+            name=name,
+            role=role,
+            password_hash=hash_password(password),
+        )
+        db.add(user)
+    return user
+
+
 def is_local_database_url(database_url: str) -> bool:
     if not database_url or database_url.startswith("sqlite"):
         return True
@@ -114,6 +129,22 @@ def seed_demo(db: Session | None = None, config: Settings = settings) -> int:
     try:
         for name in FIXTURE_NAMES:
             seed_fixture(db, load_fixture(FIXTURE_DIR / name))
+        if config.demo_merchant_password:
+            seed_demo_user(
+                db,
+                "demo-merchant@example.test",
+                "Synthetic Merchant",
+                "merchant",
+                config.demo_merchant_password,
+            )
+        if config.demo_individual_password:
+            seed_demo_user(
+                db,
+                "demo-individual@example.test",
+                "Synthetic Individual",
+                "individual",
+                config.demo_individual_password,
+            )
         db.commit()
         return db.query(Case).count()
     except Exception:
