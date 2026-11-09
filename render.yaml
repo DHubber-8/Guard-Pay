@@ -35,6 +35,8 @@ services:
         sync: false
       - key: ELASTIC_API_KEY
         sync: false
+      - key: ADMIN_TOKEN
+        sync: false
 
 databases:
   - name: dispute-helper-db
