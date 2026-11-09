@@ -55,6 +55,29 @@ uvicorn app.main:app --reload
 The optional containerized backend can be started with `docker compose up backend`.
 The API is available at `http://localhost:8000`.
 
+### Synthetic demo tools
+
+All demo data is synthetic and local-only. From `backend`:
+
+```powershell
+python -m scripts.seed_demo
+python -m scripts.dispute_checklist
+python -m scripts.reset_demo --yes
+Invoke-RestMethod http://localhost:8000/mock-carrier/tracking/DEMO-DELIVERED-001
+```
+
+The mock carrier recognizes `DELIVERED`, `IN_TRANSIT`, `STUCK-<N>`, and `LOST`
+tracking-number patterns. It always labels responses as mock data. Creating a
+PayPal sandbox order is an explicit live-sandbox action:
+
+```powershell
+python -m scripts.create_sandbox_order
+```
+
+Use `--tracking-number`, `--carrier`, `--actor-id`, and `--case-id` together to
+add tracking after capture. Sandbox order and capture IDs are written to the
+gitignored `backend/scripts/out/orders.json`.
+
 When the backend runs in Docker, it reaches PostgreSQL at the Compose service
 hostname `db`; direct local runs use `localhost` instead.
 
@@ -84,6 +107,11 @@ In the API service's Environment dashboard, set the values for `PAYPAL_CLIENT_ID
 frontend URL (plus localhost if needed), along with `CARRIER_API_BASE_URL`,
 `ELASTIC_URL`, and `ELASTIC_API_KEY` as needed. Keep secrets in the Render
 dashboard; do not commit them.
+
+Set `CARRIER_API_BASE_URL` to the public mock-carrier path on this service:
+`https://<your-service>.onrender.com/mock-carrier`. The endpoint is read-only,
+synthetic, and labels every response with `"mock": true`; delivery-watch
+polling can request `/tracking/{tracking_number}` from this base URL.
 
 After the deploy finishes, copy the API service's public URL from its Render
 Overview page. It will be used later as the PayPal webhook URL in task A2.
