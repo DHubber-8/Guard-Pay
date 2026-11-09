@@ -20,7 +20,7 @@ Python 3.12 recommended; avoid pre-release versions.
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
 
