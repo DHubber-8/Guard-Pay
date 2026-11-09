@@ -16,6 +16,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from app.config import settings
 from app.paypal.client import PayPalClient
 from app.paypal.disputes import ApprovalRequiredError
 
@@ -41,6 +42,7 @@ class RefundResult(BaseModel):
 
     refund_id: str
     status: str | None = None
+    simulated: bool = False
 
 
 class RefundNotAllowedError(ValueError):
@@ -125,6 +127,10 @@ async def refund_capture(
         raise ApprovalRequiredError(
             "Explicit approval is required: provide both approver_id and case_id."
         )
+    if settings.demo_mode:
+        from app.paypal.demo import refund_result
+
+        return RefundResult.model_validate(refund_result(capture_id))
 
     owned_client = client is None
     paypal = client or PayPalClient()

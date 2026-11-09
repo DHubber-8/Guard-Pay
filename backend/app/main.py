@@ -34,6 +34,13 @@ def create_app(config: Settings = settings) -> FastAPI:
     """Create the API application with configured frontend origins."""
     if config.env.lower() == "production" and not config.session_secret:
         raise RuntimeError("SESSION_SECRET must be set when ENV=production")
+    if config.demo_mode and config.env.lower() == "production" and config.paypal_client_id:
+        logger.error(
+            "DEMO_MODE cannot be enabled in production when PAYPAL_CLIENT_ID is configured"
+        )
+        raise RuntimeError(
+            "DEMO_MODE cannot be enabled in production with PAYPAL_CLIENT_ID"
+        )
     if config.env.lower() == "production" and config.frontend_origins_are_localhost_only:
         logger.warning(
             "FRONTEND_ORIGIN only contains localhost origins in production; "
