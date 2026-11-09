@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "damaged_hand_cream.json"
+FIXTURE = Path(__file__).resolve().parents[1] / "app" / "fixtures" / "damaged_hand_cream.json"
 
 
 def main() -> None:

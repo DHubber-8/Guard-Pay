@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.models import AuditLog, Case
 from app.db.session import get_db
-from app.paypal.client import PayPalClient, PayPalError
+from app.paypal.client import PayPalClient, PayPalError, get_paypal
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -32,7 +32,11 @@ _DISPUTE_EVENTS = {
 
 
 @router.post("/paypal")
-async def paypal_webhook(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
+async def paypal_webhook(
+    request: Request,
+    db: Session = Depends(get_db),
+    client: PayPalClient = Depends(get_paypal),
+) -> JSONResponse:
     """Verify and record a PayPal webhook event."""
     body = await request.body()
     webhook_id = settings.paypal_webhook_id.strip()
@@ -56,7 +60,6 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)) -> JSO
         "webhook_id": webhook_id,
         "webhook_event": event,
     }
-    client = PayPalClient()
     try:
         verification_response = await client.request(
             "POST",
@@ -67,9 +70,6 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)) -> JSO
     except (PayPalError, httpx.HTTPError, ValueError):
         logger.warning("PayPal webhook signature verification request failed")
         return JSONResponse({"detail": "Webhook signature verification failed"}, 400)
-    finally:
-        await client.aclose()
-
     if verification.get("verification_status") != "SUCCESS":
         logger.warning("PayPal webhook signature verification was not successful")
         return JSONResponse({"detail": "Webhook signature verification failed"}, 400)
