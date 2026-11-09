@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -81,9 +82,6 @@ async def paypal_webhook(
     if not isinstance(event_type, str) or not event_type:
         return JSONResponse({"detail": "Webhook event type is required"}, 400)
 
-    if _has_processed_event(db, event_id):
-        return JSONResponse({"status": "received"}, 200)
-
     resource = event.get("resource")
     if not isinstance(resource, dict):
         resource = {}
@@ -112,6 +110,7 @@ async def paypal_webhook(
         case=case,
         actor="paypal",
         event=event_type,
+        event_id=event_id,
         details={
             "event_id": event_id,
             "event_type": event_type,
@@ -120,20 +119,50 @@ async def paypal_webhook(
         },
     )
     db.add(audit)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if db.query(AuditLog).filter(AuditLog.event_id == event_id).first() is not None:
+            return JSONResponse({"status": "received"}, 200)
+        if case is None or not dispute_id:
+            raise
+
+        case = (
+            db.query(Case)
+            .filter(Case.paypal_dispute_id == dispute_id)
+            .first()
+        )
+        if case is None:
+            raise
+        case.status = _event_status(event_type, resource)
+        db.add(
+            AuditLog(
+                case=case,
+                actor="paypal",
+                event=event_type,
+                event_id=event_id,
+                details={
+                    "event_id": event_id,
+                    "event_type": event_type,
+                    "resource_id": resource_id,
+                    "resource": resource,
+                },
+            )
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if db.query(AuditLog).filter(AuditLog.event_id == event_id).first() is not None:
+                return JSONResponse({"status": "received"}, 200)
+            raise
 
     if event_type in _DISPUTE_EVENTS:
         handle_dispute_event(event, db)
     else:
         logger.info("Ignoring unknown PayPal webhook event type: %s", event_type)
     return JSONResponse({"status": "received"}, 200)
-
-
-def _has_processed_event(db: Session, event_id: str) -> bool:
-    """Check the event id stored in the webhook audit records."""
-    audits = db.query(AuditLog).filter(AuditLog.actor == "paypal").all()
-    return any(audit.details.get("event_id") == event_id for audit in audits)
-
 
 def _resource_id(resource: dict[str, Any]) -> str | None:
     value = resource.get("dispute_id") or resource.get("id")

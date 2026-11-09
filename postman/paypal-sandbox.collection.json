@@ -1,0 +1,162 @@
+{
+  "info": {
+    "_postman_id": "1d34f3cb-1d5e-4e8d-9f7d-9d8b7b2b0001",
+    "name": "paypal-sandbox",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "" },
+    { "key": "clientId", "value": "" },
+    { "key": "clientSecret", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "orderId", "value": "" },
+    { "key": "captureId", "value": "" },
+    { "key": "disputeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Get token",
+      "request": {
+        "method": "POST",
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{clientId}}", "type": "string" },
+            { "key": "password", "value": "{{clientSecret}}", "type": "string" }
+          ]
+        },
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Accept-Language", "value": "en_US" },
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "grant_type", "value": "client_credentials", "type": "text" }
+          ]
+        },
+        "url": "{{baseUrl}}/v1/oauth2/token"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('token request succeeded', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('accessToken', json.access_token);",
+              "pm.environment.set('accessToken', json.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create order",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "PayPal-Request-Id", "value": "{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "options": { "raw": { "language": "json" } },
+          "raw": "{\n  \"intent\": \"CAPTURE\",\n  \"purchase_units\": [{\n    \"reference_id\": \"postman-demo\",\n    \"invoice_id\": \"postman-{{$timestamp}}-{{$randomInt 1000 9999}}\",\n    \"amount\": { \"currency_code\": \"USD\", \"value\": \"5.00\" }\n  }]\n}"
+        },
+        "url": "{{baseUrl}}/v2/checkout/orders"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('order created', function () { pm.response.to.have.status(201); });",
+              "const json = pm.response.json();",
+              "if (json.id) pm.environment.set('orderId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Capture order",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "PayPal-Request-Id", "value": "{{$guid}}" }
+        ],
+        "url": "{{baseUrl}}/v2/checkout/orders/{{orderId}}/capture"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('order captured', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+              "const json = pm.response.json();",
+              "const captures = (((json.purchase_units || [])[0] || {}).payments || {}).captures || [];",
+              "if (captures[0] && captures[0].id) pm.environment.set('captureId', captures[0].id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get order",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "url": "{{baseUrl}}/v2/checkout/orders/{{orderId}}"
+      }
+    },
+    {
+      "name": "Capture details",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "url": "{{baseUrl}}/v2/payments/captures/{{captureId}}"
+      }
+    },
+    {
+      "name": "Get dispute",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "url": "{{baseUrl}}/v1/customer/disputes/{{disputeId}}"
+      }
+    },
+    {
+      "name": "List disputes",
+      "request": {
+        "method": "GET",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "url": "{{baseUrl}}/v1/customer/disputes?page_size=20"
+      }
+    },
+    {
+      "name": "Add tracking",
+      "request": {
+        "method": "POST",
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }] },
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "PayPal-Request-Id", "value": "{{$guid}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "options": { "raw": { "language": "json" } },
+          "raw": "{\n  \"capture_id\": \"{{captureId}}\",\n  \"tracking_number\": \"POSTMAN-TRACK-001\",\n  \"carrier\": \"OTHER\",\n  \"carrier_name_other\": \"Postman Demo Carrier\",\n  \"notify_payer\": false\n}"
+        },
+        "url": "{{baseUrl}}/v2/checkout/orders/{{orderId}}/track"
+      }
+    }
+  ]
+}

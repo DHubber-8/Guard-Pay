@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     admin_token: str = ""
     workers_enabled: bool = False
     workers_interval_seconds: int = 300
+    demo_mode: bool = False
 
     @property
     def frontend_origins(self) -> list[str]:

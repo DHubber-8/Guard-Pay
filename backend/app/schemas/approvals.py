@@ -21,3 +21,4 @@ class ApprovalResponse(BaseModel):
     decision: Literal["approve", "decline"]
     status: str
     refund_id: str | None = None
+    simulated: bool = False

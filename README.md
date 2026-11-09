@@ -1,6 +1,9 @@
 <!-- Owner: Digant; Status: in progress -->
 # PayPalSupport
 
+[Judge demo instructions](docs/DEMO.md) — hosted URL, three-minute walkthrough,
+credential-free local setup, environment variables, and troubleshooting.
+
 AI assistant for PayPal staff who resolve disputes. Disputes arrive from PayPal (webhooks and the Disputes API); the system pulls the order, tracking, evidence and account history from PayPal, flags anything suspicious, and suggests a resolution. Staff can also check any account or transaction for fraud signals. A person makes every decision, and every decision is logged.
 
 ## Structure
@@ -118,4 +121,60 @@ Overview page. It will be used later as the PayPal webhook URL in task A2.
 
 ## Status
 
-This repository contains minimal application stubs only. Business logic and persistence will be added later.
+The repository now contains a working FastAPI backend with authentication,
+PayPal webhook and API wrappers, case/order-help/personal/approval routes,
+delivery and deadline workers, synthetic fixtures, resettable hosted demo data,
+Docker/Render deployment configuration, and Postman collections. The AI/rules
+pipeline and several frontend-to-live-backend integrations remain future work.
+
+## Backend run order
+
+From the repository root:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d db
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+python -m alembic -c alembic.ini upgrade head
+uvicorn app.main:app --reload
+```
+
+In another terminal, with the backend environment active:
+
+```powershell
+cd backend
+python -m scripts.seed_demo
+```
+
+The seed is synthetic and local-only. Reset it with:
+
+```powershell
+python -m scripts.reset_demo --yes
+```
+
+The hosted equivalent is `POST /admin/reseed-demo`, protected by
+`X-Admin-Token` when `ADMIN_TOKEN` is configured. It removes only marked demo
+rows and preserves real PayPal disputes and audit history.
+
+Important environment variables include `DATABASE_URL`, `ENV`,
+`DEMO_MODE` (local simulated PayPal reads/refunds),
+`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`,
+`PAYPAL_BASE_URL`, `FRONTEND_ORIGIN`, `CARRIER_API_BASE_URL`, `SESSION_SECRET`,
+`SESSION_TTL_SECONDS`, `ADMIN_TOKEN`, `WORKERS_ENABLED`, and
+`WORKERS_INTERVAL_SECONDS`. Keep secrets in `.env` or the deployment provider;
+never commit them. Production requires `SESSION_SECRET`.
+
+The mock carrier is read-only and synthetic:
+
+```powershell
+Invoke-RestMethod http://localhost:8000/mock-carrier/tracking/DELIVERED-72H
+Invoke-RestMethod http://localhost:8000/mock-carrier/tracking/STUCK-5
+```
+
+It recognizes `DELIVERED`, `DELIVERED-<hours>H`, `IN_TRANSIT`, `STUCK-<N>`,
+and `LOST`. Delivery watch uses the in-process mock when
+`CARRIER_API_BASE_URL` is empty, or the configured `/mock-carrier` HTTP endpoint
+when it is set.

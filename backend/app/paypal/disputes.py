@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.config import settings
 from app.paypal.client import PayPalClient
 
 
@@ -85,6 +86,7 @@ class Dispute(BaseModel):
         default_factory=AllowedResponseOptions
     )
     links: list[dict[str, Any]] = Field(default_factory=list)
+    simulated: bool = False
 
     @property
     def amount(self) -> str | None:
@@ -109,6 +111,7 @@ class DisputeSummary(BaseModel):
     dispute_amount: DisputeMoney | None = None
     create_time: str | None = None
     update_time: str | None = None
+    simulated: bool = False
 
 
 class DisputeActionResult(BaseModel):
@@ -149,6 +152,10 @@ def _summary(data: Mapping[str, Any]) -> DisputeSummary:
 
 async def get_dispute(dispute_id: str, client: PayPalClient | None = None) -> Dispute:
     """Fetch and parse one PayPal customer dispute."""
+    if settings.demo_mode:
+        from app.paypal.demo import dispute_payload
+
+        return Dispute.model_validate(dispute_payload(dispute_id))
     owned_client = client is None
     paypal = client or PayPalClient()
     try:
@@ -167,6 +174,10 @@ async def list_disputes(
     """List PayPal disputes using the API's summary response."""
     if page_size < 1:
         raise ValueError("page_size must be at least 1")
+    if settings.demo_mode:
+        from app.paypal.demo import dispute_summaries
+
+        return [_summary(item) for item in dispute_summaries()[:page_size]]
     owned_client = client is None
     paypal = client or PayPalClient()
     try:
