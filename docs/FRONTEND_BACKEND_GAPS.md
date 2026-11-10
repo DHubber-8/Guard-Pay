@@ -95,13 +95,13 @@ stubs are removed. Frontend-only staff samples remain in
   "action": "Consider sending the account to the risk team ...", "cases": ["PP-D-41027"] }
 ```
 
-### 7. Flags
+### 7. Flags — implemented
 `GET /flags` → `[{ "id", "level": "high | medium", "kind": "Account | Transaction | Delivery", "subject", "text", "when", "query", "case" }]`. `query` is what the frontend passes to `/checks`. Delivery flags (from the A7 delivery watch) send `case` instead, and open that case.
 
 ### 8. Assignment and staff
 - `POST /cases/{id}/assign` body `{ "staff_id" }`.
-- Staff sign-in: the frontend doesn't call the backend for this yet. "Continue with PayPal" signs in a demo staff member in the browser. In production this would be PayPal's staff single sign-on.
-- Until then `approver_id` comes from the browser, so it is only trustworthy for the demo. Once there is a real session, the backend should take the approver from the session and ignore the `approver_id` in the request body.
+- Staff sign-in uses the backend `/auth/login` and `/auth/signup` routes with the signed HttpOnly session cookie. The frontend validates the cookie through `/auth/me` on startup and calls `/auth/logout` when signing out.
+- Until PayPal staff SSO is integrated, account creation is local merchant authentication.
 
 ### 9. Audit log
 `GET /audit-log` → `[{ "at", "case", "action", "ai", "decision", "by", "notes" }]`, newest first. Rows from the A7 workers use `by: "deadline-watch"` or `"delivery-watch"` and `decision: "Reminder sent"` or `"Flag raised"`.
@@ -110,6 +110,7 @@ stubs are removed. Frontend-only staff samples remain in
 Both workers only read data, then write flags, reminders and audit rows. They never decide a case or move money (`docs/RULES.md`).
 - **Deadline watch** (`workers/deadlines.py`): `due_soon(db, days=3)` finds open cases due within three days or overdue. The `--once` worker writes idempotent `deadline_7d`, `deadline_3d`, `deadline_1d`, and `deadline_overdue` audit rows without changing case status.
 - **Delivery watch** (`workers/delivery_watch.py`): polls open `Shipment` rows, maps mock/carrier statuses to `on_time`, `delayed`, `customs`, `failed`, or `delivered`, records drafted messages for delayed/failed shipments, and writes one audit row per status change.
+- `GET /workers/status` reports the configured worker cadence and whether background workers are enabled. Run history is not persisted.
 - `POST /admin/run-workers` runs both workers with the configured admin token. `WORKERS_ENABLED` enables the background delivery loop; a separate status endpoint is not currently implemented.
 
 ## Nice to have
