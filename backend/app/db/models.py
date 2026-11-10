@@ -180,3 +180,19 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     case: Mapped[Case | None] = relationship(back_populates="audit_logs")
+
+
+class DevLog(Base):
+    __tablename__ = "dev_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, server_default=func.now())
+    kind: Mapped[str] = mapped_column(String(32), index=True)
+    request_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_ms: Mapped[float | None] = mapped_column(Numeric(12, 3), nullable=True)
+    level: Mapped[str] = mapped_column(String(16), default="INFO")
+    message: Mapped[str] = mapped_column(String(500), default="")
+    meta: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
