@@ -15,6 +15,9 @@ from app.schemas.cases import CaseDetail, CaseRow, CaseType, TimelineItem
 from pydantic import ValidationError
 
 from app.schemas.findings import Findings
+from app.pipeline import analyze_case
+from app.paypal.disputes import get_dispute
+from app.rules.paypal_reason_mapping import map_paypal_reason
 
 router = APIRouter(
     prefix="/cases",
@@ -138,3 +141,86 @@ def get_case(case_id: int, db: Session = Depends(get_db)) -> CaseDetail:
         timeline=_timeline(case),
     )
     return CaseDetail.model_validate(data)
+
+@router.post("/{case_id}/analyze")
+async def analyze_merchant_case(
+    case_id: int,
+    db: Session = Depends(get_db),
+):
+    """Analyze a merchant case without modifying the database."""
+
+    case = (
+        db.query(Case)
+        .options(selectinload(Case.evidence_items))
+        .filter(Case.id == case_id)
+        .one_or_none()
+    )
+
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    dispute = None
+
+    if case.paypal_dispute_id:
+        try:
+            dispute = await get_dispute(case.paypal_dispute_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail="Unable to retrieve PayPal dispute details",
+            ) from exc
+
+    scenario_id = None
+
+    if dispute is not None:
+        scenario_id = map_paypal_reason(dispute.reason)
+
+    supported_scenarios = {
+        "item_not_received",
+        "item_not_as_described",
+        "unauthorized_purchase",
+        "refund_abuse",
+        "own_evidence_check",
+    }
+
+    if scenario_id is None and case.scenario in supported_scenarios:
+        scenario_id = case.scenario
+
+    if scenario_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Unable to identify a supported dispute scenario",
+        )
+
+    evidence = {}
+
+    if dispute is not None:
+        if dispute.disputed_transactions:
+            evidence["transaction_details"] = [
+                transaction.model_dump()
+                for transaction in dispute.disputed_transactions
+            ]
+
+        if dispute.messages:
+            evidence["buyer_complaint"] = [
+                message.model_dump()
+                for message in dispute.messages
+                if message.posted_by == "BUYER"
+                and message.content
+            ]
+
+            if not evidence["buyer_complaint"]:
+                del evidence["buyer_complaint"]
+
+    result = analyze_case(
+        {
+            "case_id": case.id,
+            "mode": "merchant",
+            "scenario_id": scenario_id,
+            "evidence": evidence,
+            "triggered_indicators": [],
+        },
+        use_ai=False,
+    )
+
+    return result
