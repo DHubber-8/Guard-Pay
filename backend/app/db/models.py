@@ -18,6 +18,17 @@ class Base(DeclarativeBase):
     """Base class for all database models."""
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16))
+    password_hash: Mapped[str] = mapped_column(String(512))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Order(Base):
     __tablename__ = "orders"
 
@@ -33,6 +44,26 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     cases: Mapped[list[Case]] = relationship(back_populates="order")
+    shipments: Mapped[list[Shipment]] = relationship(back_populates="order")
+
+
+class Shipment(Base):
+    __tablename__ = "shipments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), nullable=False)
+    carrier: Mapped[str] = mapped_column(String(128), nullable=False)
+    tracking_number: Mapped[str] = mapped_column(String(128), nullable=False)
+    shipped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    drafted_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    order: Mapped[Order] = relationship(back_populates="shipments")
 
 
 class Case(Base):
@@ -42,7 +73,9 @@ class Case(Base):
     mode: Mapped[str] = mapped_column(String(16))
     scenario: Mapped[str] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32))
-    paypal_dispute_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    paypal_dispute_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True, index=True
+    )
     order_id: Mapped[int | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
     findings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     risk_level: Mapped[str] = mapped_column(String(16))
@@ -140,7 +173,26 @@ class AuditLog(Base):
     case_id: Mapped[int | None] = mapped_column(ForeignKey("cases.id"), nullable=True)
     actor: Mapped[str] = mapped_column(String(128))
     event: Mapped[str] = mapped_column(String(128))
+    event_id: Mapped[str | None] = mapped_column(
+        String(128), nullable=True, unique=True, index=True
+    )
     details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     case: Mapped[Case | None] = relationship(back_populates="audit_logs")
+
+
+class DevLog(Base):
+    __tablename__ = "dev_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, server_default=func.now())
+    kind: Mapped[str] = mapped_column(String(32), index=True)
+    request_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_ms: Mapped[float | None] = mapped_column(Numeric(12, 3), nullable=True)
+    level: Mapped[str] = mapped_column(String(16), default="INFO")
+    message: Mapped[str] = mapped_column(String(500), default="")
+    meta: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)

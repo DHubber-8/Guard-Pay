@@ -7,12 +7,15 @@ Status: in progress
 from __future__ import annotations
 
 import logging
+import asyncio
 import time
 from typing import Any
 
+from fastapi import Request
 import httpx
 
 from app.config import settings
+from app import devlogs
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +50,11 @@ class PayPalClient:
         self.client = http_client or httpx.AsyncClient(
             base_url=self.base_url,
             transport=transport,
+            timeout=httpx.Timeout(10.0, connect=5.0),
         )
         self._access_token: str | None = None
         self._token_expires_at = 0.0
+        self._token_lock = asyncio.Lock()
 
     async def fetch_oauth_token(self, force_refresh: bool = False) -> str:
         """Get a cached access token, refreshing it shortly before expiration."""
@@ -60,46 +65,109 @@ class PayPalClient:
         ):
             return self._access_token
 
-        response = await self.client.post(
-            "/v1/oauth2/token",
-            auth=(self.client_id, self.client_secret),
-            data={"grant_type": "client_credentials"},
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-        )
-        if response.headers.get("PayPal-Debug-Id"):
-            logger.info("PayPal-Debug-Id: %s", response.headers["PayPal-Debug-Id"])
-        if response.is_error:
-            raise self._error_from_response(response)
-        try:
-            payload = response.json()
-            token = payload["access_token"]
-            expires_in = float(payload["expires_in"])
-        except (KeyError, TypeError, ValueError) as exc:
-            raise PayPalError(
-                response.status_code,
-                response.headers.get("PayPal-Debug-Id"),
-                "PayPal returned an invalid OAuth token response",
-            ) from exc
+        async with self._token_lock:
+            if (
+                not force_refresh
+                and self._access_token
+                and time.monotonic() < self._token_expires_at
+            ):
+                return self._access_token
+            started = time.perf_counter()
+            try:
+                response = await self.client.post(
+                    "/v1/oauth2/token",
+                    auth=(self.client_id, self.client_secret),
+                    data={"grant_type": "client_credentials"},
+                    headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                )
+            except Exception as exc:
+                devlogs.record(
+                    "paypal_out", request_id=devlogs.current_request_id(), method="POST",
+                    path="/v1/oauth2/token", duration_ms=(time.perf_counter() - started) * 1000,
+                    message=f"PayPal request failed: {type(exc).__name__}",
+                )
+                raise
+            self._record_outbound(response, started, "/v1/oauth2/token")
+            if response.headers.get("PayPal-Debug-Id"):
+                logger.info("PayPal-Debug-Id: %s", response.headers["PayPal-Debug-Id"])
+            if response.is_error:
+                raise self._error_from_response(response)
+            try:
+                payload = response.json()
+                token = payload["access_token"]
+                expires_in = float(payload["expires_in"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise PayPalError(
+                    response.status_code,
+                    response.headers.get("PayPal-Debug-Id"),
+                    "PayPal returned an invalid OAuth token response",
+                ) from exc
 
-        self._access_token = token
-        self._token_expires_at = time.monotonic() + max(0.0, expires_in - 60)
-        return token
+            self._access_token = token
+            self._token_expires_at = time.monotonic() + max(0.0, expires_in - 60)
+            return token
 
     async def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         """Make an authenticated request and retry once if the token is rejected."""
         token = await self.fetch_oauth_token()
         headers = dict(kwargs.pop("headers", {}) or {})
         headers["Authorization"] = "Bearer " + token
-        response = await self.client.request(method, path, headers=headers, **kwargs)
-        if response.status_code == 401:
-            token = await self.fetch_oauth_token(force_refresh=True)
-            headers["Authorization"] = "Bearer " + token
-            response = await self.client.request(method, path, headers=headers, **kwargs)
+        retryable_status = {429, *range(500, 600)}
+        retryable_request = method.upper() == "GET" or "PayPal-Request-Id" in headers
+        max_retries = 2 if retryable_request else 0
+        for attempt in range(max_retries + 1):
+            started = time.perf_counter()
+            try:
+                response = await self.client.request(method, path, headers=headers, **kwargs)
+            except Exception as exc:
+                devlogs.record(
+                    "paypal_out", request_id=devlogs.current_request_id(), method=method,
+                    path=path, duration_ms=(time.perf_counter() - started) * 1000,
+                    message=f"PayPal request failed: {type(exc).__name__}",
+                )
+                raise
+            self._record_outbound(response, started, path, method)
+            if response.status_code == 401:
+                token = await self.fetch_oauth_token(force_refresh=True)
+                headers["Authorization"] = "Bearer " + token
+                started = time.perf_counter()
+                response = await self.client.request(method, path, headers=headers, **kwargs)
+                self._record_outbound(response, started, path, method)
+            if response.status_code not in retryable_status or attempt == max_retries:
+                break
+            await asyncio.sleep(0.1 * (2**attempt))
         if response.headers.get("PayPal-Debug-Id"):
             logger.info("PayPal-Debug-Id: %s", response.headers["PayPal-Debug-Id"])
         if response.is_error:
             raise self._error_from_response(response)
         return response
+
+    def _record_outbound(
+        self, response: httpx.Response, started: float, path: str, method: str = "POST"
+    ) -> None:
+        error_name = error_message = None
+        if response.is_error:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = {}
+            error_name = payload.get("name") if isinstance(payload, dict) else None
+            error_message = (
+                payload.get("message") or payload.get("error_description")
+                if isinstance(payload, dict)
+                else None
+            )
+        devlogs.record(
+            "paypal_out",
+            request_id=devlogs.current_request_id(),
+            method=method,
+            path=path,
+            status=response.status_code,
+            duration_ms=(time.perf_counter() - started) * 1000,
+            paypal_debug_id=response.headers.get("PayPal-Debug-Id"),
+            error_name=error_name,
+            error_message=error_message,
+        )
 
     @staticmethod
     def _error_from_response(response: httpx.Response) -> PayPalError:
@@ -116,3 +184,14 @@ class PayPalClient:
 
     async def aclose(self) -> None:
         await self.client.aclose()
+
+
+async def get_paypal(request: Request) -> PayPalClient:
+    """Return the application-owned PayPal client."""
+    client = getattr(request.app.state, "paypal_client", None)
+    if client is None:
+        from app.routes import webhooks
+
+        client = webhooks.PayPalClient()
+        request.app.state.paypal_client = client
+    return client

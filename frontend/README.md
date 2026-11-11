@@ -1,6 +1,6 @@
-# Dispute Helper: Frontend
+# Guard Pay: Frontend (staff console)
 
-React + Vite. All 34 screens from Figma ("Wireframes v2") run on fake data, so you can click through the whole demo without a backend.
+React + Vite. A console for **PayPal staff** who resolve disputes. Disputes come in from PayPal; the console shows the AI's summary, flags and suggested resolution, and staff make and log every decision. Everything runs on demo data, so you can click through without a backend.
 
 ## Run it
 Needs Node.js 20.19+ or 22 LTS (`node -v`).
@@ -10,49 +10,53 @@ cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173. Go to **http://localhost:5173/screens** for a clickable list of every screen.
+Open http://localhost:5173.
+
+Demo data lives in memory, so refreshing the page resets decisions and requests.
+
+## Screens
+| URL | Screen |
+|---|---|
+| `/signin` | Staff sign in (PayPal staff SSO; demo button signs in as Diana R.) |
+| `/` | Overview: today's workload, my most urgent cases, new flags |
+| `/queue` | Dispute queue (AG Grid). Views: `?view=mine`, `due`, `high`, `waiting`, `resolved` |
+| `/cases/:id` | Case workspace: AI summary, evidence by side, PayPal timeline, both accounts, flags, decision, request info, audit |
+| `/checks?q=` | Account or transaction check (email or transaction ID) |
+| `/flags` | Accounts and transactions flagged outside disputes |
+| `/insights` | Team numbers and patterns |
+| `/audit` | Every decision with approver, AI suggestion and notes |
+| `/extras/states` | Empty, loading, error and not-found states |
+
+The search box in the top bar opens a case for a case ID (`PP-D-…`) and an account check for anything else.
 
 ## Where things are
 | Folder / file | What it is |
 |---|---|
-| `src/styles/tokens.css` | Colours, fonts, sizes. Change the palette here only. |
-| `src/styles/base.css` | Shared styles (cards, buttons, badges, layout helpers) |
-| `src/config.js` | Product name, backend URL and mock switch (both read from `.env`) |
-| `src/components/` | Building blocks that match the Figma components (Button, Input, Badge, FindingsPanel, charts…) |
-| `src/layouts/` | Page frames: landing nav, auth split screen, merchant nav, mobile frame, Order Help frame |
-| `src/pages/` | One file per group of screens (landing, auth, onboarding, merchant, individual, scam, orderhelp, extras) |
-| `src/mock/data.js` | Fake data for the demo |
-| `src/api/index.js` | The only place that talks to the backend |
-| `src/App.jsx` | All routes |
-
-## Routes (Figma number → URL)
-- 01 `/` · 01b–01d `/features/order-help`, `/features/scam-check`, `/features/dispute-helper` (opened from the feature cards on the landing page)
-- 02 `/start` · 03a `/signin` · 03b `/signup/individual` · 03c `/signup/business` · 03d `/signin?reset=1`
-- 04–06 `/onboarding/1..3`
-- 07 `/merchant` (has the **Formal disputes → Manage disputes** card, which opens `/merchant/inbox?type=dispute`)
-- 08 `/merchant/inbox` · 09 + 11 `/merchant/cases/1051` · 10 `/merchant/disputes/PP-D-27891` · 12 `/merchant/risk/1066`
-- 13 `/merchant/shipments` · 14 `/merchant/insights` · 15 `/merchant/scam-check` · 16 `/merchant/settings`
-- 17 `/me` · 18 `/me/account`
-- 19–24 `/scam-check`, `/new`, `/analyzing`, `/questions`, `/result`, `/decision`
-- 25 `/store` · 26–32 `/help/diana-richella`, `/problem`, `/answer`, `/waiting`, `/offer`, `/resolved`, `/paypal`
-- 33 `/extras/emails` · 34 `/extras/states`
+| `src/styles/tokens.css` | Colours, fonts, sizes (PayPal-style blues) |
+| `src/styles/base.css` | Shared styles: cards, buttons, badges, tables, layout helpers |
+| `src/styles/console.css` | The console shell: sidebar, top bar, case workspace |
+| `src/config.js` | Product name, backend URL and mock switch (read from `.env`) |
+| `src/components/` | Building blocks (Button, Badge, Modal, RadioCard, FindingsPanel, charts…) |
+| `src/layouts/ConsoleLayout.jsx` | Sidebar, top bar and search |
+| `src/pages/console/` | One file per screen |
+| `src/mock/console.js` | Demo data based on the team's sandbox accounts (names and emails only) |
+| `src/api/index.js` | The only place that talks to the backend, plus the demo backend |
+| `src/labels.js` | Shared labels and formatting |
 
 ## Connecting the backend
-1. Start the FastAPI backend (see the root README). It runs on http://localhost:8000 and already allows http://localhost:5173 through `FRONTEND_ORIGIN`.
+1. Start the FastAPI backend (see the root README). It runs on http://localhost:8000 and allows http://localhost:5173 through `FRONTEND_ORIGIN`.
 2. Copy `frontend/.env.example` to `frontend/.env` and set `VITE_USE_MOCK=false`.
 3. Restart `npm run dev`.
 
-All calls live in `src/api/index.js`. It already uses the backend routes that exist today (`/cases`, `/cases/{id}/approve`, `/order-help`…) and converts the backend `Case` model into what the screens need (`toInboxRow`). Endpoints the UI still needs from the backend are listed in `docs/FRONTEND_BACKEND_GAPS.md`.
-
-Pages don't need to change: they use `useQuery(...)` with `api.*`.
+`src/api/index.js` converts the backend `Case` model into what the screens need (`toQueueRow`, `toCaseDetail`). What the backend still needs is in `docs/FRONTEND_BACKEND_GAPS.md`.
 
 ## Rules we follow (docs/RULES.md)
-- Nothing that moves money happens without the merchant pressing **Confirm**.
-- Risk (low/medium/high) is shown separately from evidence status (complete/partial/missing).
-- Every evidence item is labelled Verified, Unverified or Not provided.
-- No made-up confidence percentages, and no "fraud confirmed" wording.
+- The AI only recommends. Every refund, ruling or account action needs a staff decision, and every decision is logged.
+- Staff who choose something other than the AI's suggestion must write down why.
+- Risk is shown separately from evidence status, and every evidence item is labelled verified or not.
+- No made-up percentages and no "fraud confirmed" wording.
+- Buyers and merchants are only contacted through PayPal.
 
 ## Notes
-- Fonts: Inter is bundled through `@fontsource`. Headings use Lil Grotesk (SIL OFL); put its files in `public/fonts/` (see the README there). Without them headings fall back to Inter.
-- Background art in `src/assets/art/` comes from the team's Pinterest moodboard. Check the image rights before a public launch, or swap them for our own.
+- Fonts: Inter (bundled through `@fontsource`) for text, Lil Grotesk (SIL OFL, in `public/fonts/`) for headings.
 - The build warns that the JS file is large (mostly AG Grid). That's fine for the hackathon.

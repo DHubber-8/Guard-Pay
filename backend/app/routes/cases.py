@@ -1,17 +1,140 @@
 """Merchant case routes."""
 
-from fastapi import APIRouter
+from __future__ import annotations
 
-router = APIRouter(prefix="/cases", tags=["cases"])
+from datetime import date, datetime
+from typing import Any, Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session, selectinload
+
+from app.auth import require_user
+from app.db.models import AuditLog, Case
+from app.db.session import get_db
+from app.schemas.cases import CaseDetail, CaseRow, CaseType, TimelineItem
+from pydantic import ValidationError
+
+from app.schemas.findings import Findings
+
+router = APIRouter(
+    prefix="/cases",
+    tags=["cases"],
+    dependencies=[Depends(require_user("merchant"))],
+)
 
 
-@router.get("")
-def list_cases() -> list[dict[str, str]]:
-    # TODO: List merchant dispute cases.
-    return []
+def case_type(case: Case) -> CaseType:
+    """Derive the console category from the case's PayPal/scenario markers.
+
+    Cases without a special scenario prefix are ordinary merchant disputes,
+    including seeded fixtures and fresh PayPal webhook cases.
+    """
+    if case.paypal_dispute_id:
+        return "dispute"
+    scenario = case.scenario.lower()
+    if scenario.startswith("order_help"):
+        return "orderhelp"
+    if scenario.startswith("risk"):
+        return "risk"
+    if scenario.startswith("delivery"):
+        return "delivery"
+    return "dispute"
 
 
-@router.get("/{case_id}")
-def get_case(case_id: str) -> dict[str, str]:
-    # TODO: Return a merchant dispute case with evidence and risk details.
-    return {"case_id": case_id, "status": "stub"}
+def parsed_or_stored_findings(value: dict[str, Any] | None) -> Findings | dict[str, Any]:
+    """Parse valid findings while preserving empty or legacy payloads."""
+    stored = value or {}
+    if not stored:
+        return stored
+    try:
+        return Findings.model_validate(stored)
+    except ValidationError:
+        return stored
+
+
+def _case_row(case: Case) -> CaseRow:
+    data = CaseRow.model_validate(case).model_dump()
+    data["findings"] = parsed_or_stored_findings(case.findings)
+    return CaseRow.model_validate(data)
+
+
+def _date(value: datetime | None) -> str:
+    return (value.date() if value else date.today()).isoformat()
+
+
+def _timeline(case: Case) -> list[TimelineItem]:
+    entries: list[tuple[datetime | None, TimelineItem]] = []
+    if case.order is not None:
+        entries.append(
+            (
+                case.order.created_at,
+                TimelineItem(
+                    date=_date(case.order.created_at),
+                    text=f"Order {case.order.paypal_order_id} created",
+                    alert=False,
+                ),
+            )
+        )
+    for item in case.evidence_items:
+        entries.append(
+            (
+                item.created_at,
+                TimelineItem(
+                    date=_date(item.created_at),
+                    text=f"Evidence added: {item.description}",
+                    alert=False,
+                ),
+            )
+        )
+    for audit in case.audit_logs:
+        is_alert = "flag" in audit.event.lower() or "deadline" in audit.event.lower()
+        entries.append(
+            (
+                audit.created_at,
+                TimelineItem(
+                    date=_date(audit.created_at),
+                    text=f"{audit.actor}: {audit.event}",
+                    alert=is_alert,
+                ),
+            )
+        )
+    entries.sort(key=lambda entry: entry[0] or datetime.min)
+    return [entry[1] for entry in entries]
+
+
+@router.get("", response_model=list[CaseRow])
+def list_cases(
+    type: Literal["dispute", "orderhelp", "risk", "delivery"] | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[CaseRow]:
+    cases = db.query(Case).order_by(Case.id).all()
+    if type is not None:
+        cases = [case for case in cases if case_type(case) == type]
+    return [_case_row(case) for case in cases[offset : offset + limit]]
+
+
+@router.get("/{case_id}", response_model=CaseDetail)
+def get_case(case_id: int, db: Session = Depends(get_db)) -> CaseDetail:
+    case = (
+        db.query(Case)
+        .options(
+            selectinload(Case.order),
+            selectinload(Case.evidence_items),
+            selectinload(Case.offers),
+            selectinload(Case.audit_logs),
+        )
+        .filter(Case.id == case_id)
+        .one_or_none()
+    )
+    if case is None:
+        raise HTTPException(status_code=404, detail="Case not found")
+    data = _case_row(case).model_dump()
+    data.update(
+        order=case.order,
+        evidence_items=case.evidence_items,
+        offers=case.offers,
+        timeline=_timeline(case),
+    )
+    return CaseDetail.model_validate(data)

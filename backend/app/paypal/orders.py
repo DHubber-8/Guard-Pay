@@ -30,18 +30,24 @@ class OrderSummary(BaseModel):
     capture_ids: list[str] = Field(default_factory=list)
     shipping: dict[str, Any] | None = None
     tracking: list[dict[str, Any]] | None = None
+    simulated: bool = False
 
 
 async def get_order(order_id: str, client: PayPalClient | None = None) -> OrderSummary:
     """Fetch and parse one PayPal Orders v2 order."""
-    owned_client = client is None
-    paypal = client or PayPalClient()
-    try:
-        response = await paypal.request("GET", f"/v2/checkout/orders/{order_id}")
-        data = response.json()
-    finally:
-        if owned_client:
-            await paypal.aclose()
+    if settings.demo_mode:
+        from app.paypal.demo import order_payload
+
+        data = order_payload(order_id)
+    else:
+        owned_client = client is None
+        paypal = client or PayPalClient()
+        try:
+            response = await paypal.request("GET", f"/v2/checkout/orders/{order_id}")
+            data = response.json()
+        finally:
+            if owned_client:
+                await paypal.aclose()
 
     purchase_unit = (data.get("purchase_units") or [{}])[0]
     order_amount = purchase_unit.get("amount") or {}
@@ -74,6 +80,7 @@ async def get_order(order_id: str, client: PayPalClient | None = None) -> OrderS
         capture_ids=[capture["id"] for capture in captures if capture.get("id")],
         shipping=shipping,
         tracking=tracking,
+        simulated=bool(data.get("simulated", False)),
     )
 
 

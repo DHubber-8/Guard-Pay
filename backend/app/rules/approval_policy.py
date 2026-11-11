@@ -1,10 +1,7 @@
-"""Human approval policy."""
-"""Validation rules for explicit case decisions."""
-# Task: B6 | Area: B | Owner: SJ | Status: DONE
-# TODO: Require and record explicit human approval for money-moving actions.
-
+"""Human approval and offer validation rules."""
 
 from __future__ import annotations
+
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Literal
@@ -37,6 +34,16 @@ def validate_offer(offer: OfferType, amount: str | None, case_amount: Decimal) -
     return normalized
 
 
+
 def requires_human_approval(action: str) -> bool:
-    """B6: All external or money-moving actions require explicit approval."""
-    return action in {"refund", "offer", "submit_evidence", "send_response", "cancel", "capture", "sign", "confirm"}
+    """Require human approval for external or money-moving actions."""
+    return action in {
+        "refund",
+        "offer",
+        "submit_evidence",
+        "send_response",
+        "cancel",
+        "capture",
+        "sign",
+        "confirm",
+    }

@@ -3,28 +3,30 @@
    app follows. Names match the Figma styles (WF/...).
    ============================================================ */
 :root {
-  /* Brand */
-  --navy-900: #14232e;   /* main text */
-  --navy-700: #1f3b4d;   /* primary: buttons, active nav */
-  --navy-600: #2a4c62;   /* primary hover */
-  --steel-500: #4f7a94;  /* secondary blue */
-  --mist-200: #dde8ee;   /* light blue highlight */
-  --mist-50: #eef4f7;
-  --terracotta-500: #d9826a; /* warm accent (decoration only) */
-  --terracotta-700: #964f3c; /* warm accent safe for text */
-  --peach-200: #f2cdb8;
-  --peach-50: #fbefe7;
-  --cream-100: #f4f7f9;  /* app background (cool light grey-blue) */
-  --cream-200: #e8eef2;
+  /* Brand: PayPal-style blues so the console feels like a PayPal tool */
+  --blue-600: #0070e0;   /* primary buttons and links */
+  --blue-700: #005ea6;   /* primary hover */
+  --navy-900: #001435;   /* main text */
+  --navy-700: #003087;   /* PayPal navy: active nav, selected, headings accents */
+  --navy-600: #00266b;   /* navy hover */
+  --steel-500: #5b7bb0;  /* secondary blue */
+  --mist-200: #d6e6fb;   /* light blue highlight */
+  --mist-50: #eef5ff;
+  --terracotta-500: #009cde; /* PayPal light blue (decoration) */
+  --terracotta-700: #0057b8; /* accent safe for text */
+  --peach-200: #ffe08a;
+  --peach-50: #fff8e5;
+  --cream-100: #f5f7fa;  /* app background */
+  --cream-200: #e9eef5;
   --white: #ffffff;
-  --gold-500: #c4a052;   /* tiny details only, never text */
+  --gold-500: #ffc439;   /* PayPal yellow: tiny details only, never text */
 
   /* Neutrals */
   --text: var(--navy-900);
-  --text-2: #3b4a55;
-  --muted: #5f6c75;
-  --line: #e0e7ec;
-  --line-strong: #c6d1d9;
+  --text-2: #3c4456;
+  --muted: #5e6779;
+  --line: #dfe3eb;
+  --line-strong: #c3cad6;
 
   /* Status (kept separate from terracotta on purpose) */
   --ok: #276b4d;      --ok-bg: #e3f1ea;
@@ -36,22 +38,22 @@
   --font-display: "Lil Grotesk", "Inter", system-ui, sans-serif; /* headings, nav, buttons */
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fs-display: 56px; --lh-display: 64px;
-  --fs-h1: 36px;      --lh-h1: 44px;
-  --fs-h2: 28px;      --lh-h2: 36px;
-  --fs-h3: 20px;      --lh-h3: 28px;
+  --fs-h1: 30px;      --lh-h1: 38px;
+  --fs-h2: 24px;      --lh-h2: 32px;
+  --fs-h3: 18px;      --lh-h3: 26px;
   --fs-body: 16px;    --lh-body: 24px;
   --fs-small: 14px;   --lh-small: 20px;
   --fs-caption: 12px; --lh-caption: 16px;
 
   /* Shape */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px; --r-pill: 999px;
-  --shadow-sm: 0 1px 2px rgba(20, 35, 46, 0.06);
-  --shadow-md: 0 6px 24px rgba(20, 35, 46, 0.08);
-  --shadow-lg: 0 18px 50px rgba(20, 35, 46, 0.18);
+  --r-sm: 6px; --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(0, 20, 53, 0.06);
+  --shadow-md: 0 6px 24px rgba(0, 20, 53, 0.08);
+  --shadow-lg: 0 18px 50px rgba(0, 20, 53, 0.18);
 
   /* Layout */
   --page-max: 1344px;
-  --gutter: 48px;
+  --gutter: 32px;
 }
 
 @media (max-width: 720px) {
