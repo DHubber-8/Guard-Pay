@@ -33,7 +33,9 @@ Open `http://localhost:5173`.
 
 ### B. Full backend (`VITE_USE_MOCK=false`)
 
-This path runs PostgreSQL, the FastAPI API, Alembic migrations, and synthetic seed data. Set `DEMO_MODE=true` in `.env` for credential-free simulated PayPal reads and refunds. The `uvicorn` command stays running, so run the seed command in a second terminal after the API starts.
+This is the recommended backend-connected flow. Docker runs PostgreSQL and the FastAPI API together on port 8000. The backend image applies Alembic migrations at startup, and the seed command runs inside the backend container. Set `DEMO_MODE=true` for simulated PayPal reads and refunds.
+
+Use this Docker flow **or** the host-Uvicorn alternative below, never both at the same time. Both try to use port 8000.
 
 **PowerShell**
 
@@ -41,31 +43,22 @@ This path runs PostgreSQL, the FastAPI API, Alembic migrations, and synthetic se
 git clone https://github.com/DHubber-8/Guard-Pay.git
 cd Guard-Pay
 Copy-Item .env.example .env
-# Set DEMO_MODE=true and choose DEMO_MERCHANT_PASSWORD in .env
-docker compose up -d db
-cd backend
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-python -m alembic -c alembic.ini upgrade head
-uvicorn app.main:app --reload
+# Edit .env: set DEMO_MODE=true and choose DEMO_MERCHANT_PASSWORD.
+docker compose up -d --build db backend
 ```
-
-In a second PowerShell terminal:
 
 ```powershell
-cd Guard-Pay\backend
-.venv\Scripts\Activate.ps1
-python -m scripts.seed_demo
+docker compose exec backend python -m scripts.seed_demo
 ```
-
-Before starting the frontend, create `frontend\.env`:
 
 ```powershell
 @"
 VITE_API_URL=http://localhost:8000
 VITE_USE_MOCK=false
 "@ | Set-Content frontend\.env
+cd frontend
+npm install
+npm run dev
 ```
 
 Sign in with the seeded merchant email `demo-merchant@example.test` and the
@@ -80,31 +73,22 @@ different password.
 git clone https://github.com/DHubber-8/Guard-Pay.git
 cd Guard-Pay
 cp .env.example .env
-# Set DEMO_MODE=true and choose DEMO_MERCHANT_PASSWORD in .env
-docker compose up -d db
-cd backend
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r requirements-dev.txt
-python -m alembic -c alembic.ini upgrade head
-uvicorn app.main:app --reload
+# Edit .env: set DEMO_MODE=true and choose DEMO_MERCHANT_PASSWORD.
+docker compose up -d --build db backend
 ```
-
-In a second Bash terminal:
 
 ```bash
-cd Guard-Pay/backend
-. .venv/bin/activate
-python -m scripts.seed_demo
+docker compose exec backend python -m scripts.seed_demo
 ```
-
-Before starting the frontend, create `frontend/.env`:
 
 ```bash
 cat > frontend/.env <<'EOF'
 VITE_API_URL=http://localhost:8000
 VITE_USE_MOCK=false
 EOF
+cd frontend
+npm install
+npm run dev
 ```
 
 Sign in with `demo-merchant@example.test` and the password configured as
@@ -112,6 +96,31 @@ Sign in with `demo-merchant@example.test` and the password configured as
 original password; create a new account or reset the local database if needed.
 
 The API is available at `http://localhost:8000`. The console is not connected to every backend route yet; the hosted judge demo therefore uses path A.
+
+#### Optional host-Uvicorn development flow
+
+Use this only when actively developing the Python backend outside its container. Keep the Docker database running, but stop the Docker backend first so port 8000 is free:
+
+```powershell
+docker compose stop backend
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+python -m alembic -c alembic.ini upgrade head
+uvicorn app.main:app --reload
+```
+
+In another terminal, seed the host-run API:
+
+```powershell
+cd backend
+.venv\Scripts\Activate.ps1
+python -m scripts.seed_demo
+```
+
+To return to the Docker flow, stop the host Uvicorn process and run
+`docker compose up -d --build backend`.
 
 ## How we use PayPal
 
