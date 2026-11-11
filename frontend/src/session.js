@@ -29,6 +29,10 @@ function publish(staff) {
 }
 
 export async function login(email, password) {
+  if (USE_MOCK) {
+    publish(DEFAULT);
+    return;
+  }
   const res = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
@@ -46,6 +50,16 @@ export async function login(email, password) {
 }
 
 export async function signup(email, name, password) {
+  if (USE_MOCK) {
+    const displayName = name.trim() || DEFAULT.name;
+    publish({
+      id: displayName,
+      name: displayName,
+      initials: displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+      role: "merchant",
+    });
+    return;
+  }
   const res = await fetch(`${API_URL}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },

@@ -4,7 +4,11 @@
 
 Open the [Guard Pay demo](https://guard-pay-five.vercel.app/). The repository also defines a `guard-pay-console` static site in [`render.yaml`](../render.yaml); both use the frontend's bundled sample data. No backend or credentials are required.
 
-Click **Continue with PayPal** and follow the queue, case, account check, flags, and audit-log screens. The demo's decisions and information requests are simulated in the browser; no request is sent to PayPal or the backend.
+Use any email and password on the sign-in screen; mock mode creates a local
+session without contacting the backend. Then follow the queue, case, account
+check, flags, and audit-log screens. The demo's decisions and information
+requests are simulated in the browser; no request is sent to PayPal or the
+backend.
 
 ## Run the console locally
 
@@ -23,6 +27,13 @@ npm run dev
 ```
 
 Open `http://localhost:5173`. The sample data starts over when the page is refreshed.
+
+The local console defaults to `VITE_USE_MOCK=true`, so it uses browser sample
+data and local-only sign-in. To connect it to the API instead, create
+`frontend/.env` with `VITE_API_URL=http://localhost:8000` and
+`VITE_USE_MOCK=false`, start the full backend from the root README, and sign in
+with `demo-merchant@example.test` plus the configured
+`DEMO_MERCHANT_PASSWORD`.
 
 ## What is real and what is simulated
 

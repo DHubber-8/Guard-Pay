@@ -7,9 +7,9 @@ Guard Pay is a staff console for reviewing PayPal disputes, evidence, delivery s
 
 ## Quick start
 
-### A. Console only
+### A. Console only (`VITE_USE_MOCK=true`)
 
-This path needs Node.js 20.19+ or 22. It uses the sample data bundled in the browser: no backend, database, credentials, or `.env` file is needed.
+This is the fastest judge path. It needs Node.js 20.19+ or 22 and uses the sample data bundled in the browser. No backend, database, PayPal credentials, or `.env` file is needed. In mock mode, sign-in is local-only: use any email and password, or create a local demo account. No authentication request is sent.
 
 **PowerShell**
 
@@ -31,7 +31,7 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-### B. Full backend
+### B. Full backend (`VITE_USE_MOCK=false`)
 
 This path runs PostgreSQL, the FastAPI API, Alembic migrations, and synthetic seed data. Set `DEMO_MODE=true` in `.env` for credential-free simulated PayPal reads and refunds. The `uvicorn` command stays running, so run the seed command in a second terminal after the API starts.
 
@@ -59,6 +59,21 @@ cd Guard-Pay\backend
 python -m scripts.seed_demo
 ```
 
+Before starting the frontend, create `frontend\.env`:
+
+```powershell
+@"
+VITE_API_URL=http://localhost:8000
+VITE_USE_MOCK=false
+"@ | Set-Content frontend\.env
+```
+
+Sign in with the seeded merchant email `demo-merchant@example.test` and the
+password configured as `DEMO_MERCHANT_PASSWORD` in the root `.env`. The seed
+script does not replace an existing user's password; use a new account through
+the sign-up form or reset the local database if an earlier seed used a
+different password.
+
 **Bash**
 
 ```bash
@@ -82,6 +97,19 @@ cd Guard-Pay/backend
 . .venv/bin/activate
 python -m scripts.seed_demo
 ```
+
+Before starting the frontend, create `frontend/.env`:
+
+```bash
+cat > frontend/.env <<'EOF'
+VITE_API_URL=http://localhost:8000
+VITE_USE_MOCK=false
+EOF
+```
+
+Sign in with `demo-merchant@example.test` and the password configured as
+`DEMO_MERCHANT_PASSWORD` in the root `.env`. Existing seeded users keep their
+original password; create a new account or reset the local database if needed.
 
 The API is available at `http://localhost:8000`. The console is not connected to every backend route yet; the hosted judge demo therefore uses path A.
 
