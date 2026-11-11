@@ -58,6 +58,7 @@ export default function ConsoleLayout() {
   useEffect(() => setOpen(false), [pathname]);
 
   // Console pages need a signed-in staff member
+  if (staff === undefined) return null;
   if (!staff) return <Navigate to="/signin" replace />;
 
   const search = (e) => {
