@@ -1,38 +1,41 @@
 # Judge demo guide
 
-Dispute Helper is a PayPal staff console for reviewing disputes, evidence, delivery signals, and suggested actions. Staff can record an approval or decline, while every decision and worker reminder is written to the audit trail. The local demo uses synthetic fixtures and simulated PayPal reads/refunds so it can be evaluated without PayPal credentials.
+Guard Pay is a PayPal staff console for reviewing disputes, evidence, delivery signals and suggested actions. Staff record a decision or ask the buyer or merchant for more information through PayPal, and every decision and automatic check is written to the audit log. The AI only recommends; a person makes every decision.
 
 ## Hosted demo
 
-Open: **<HOSTED_URL>**
+Open: **<HOSTED_URL>** (the `guard-pay-console` static site in `render.yaml`).
 
-The demo login details are provided in the submission form. Do not copy credentials
-into this repository or into screenshots.
+The demo runs on sample data built into the frontend, so it needs no backend and no login details: click **Continue with PayPal** on the sign-in page. A "Sandbox data" badge in the top bar shows that nothing is sent to PayPal.
 
 ## Three-minute path
 
-1. Open the merchant inbox/queue and choose the seeded hand-cream case.
-2. Read the findings, evidence, suggested action, and case timeline.
-3. Approve a **partial refund** and confirm that the approval and refund appear in
-   the audit/timeline. In demo mode the refund is simulated and its identifier
-   starts with `SIMULATED-`.
-4. Open the delivery/shipment view and inspect the on-time, delayed, and delivered
-   tracking examples.
-5. Open Personal Scam Check, enter a synthetic description and link/sender, answer
-   the follow-up questions, and review the conservative risk guidance.
+1. Click **Continue with PayPal**. The **Overview** shows open disputes, what's due in 24 hours, new flags and the two automatic checks (deadline watch and delivery watch).
+2. Open **Dispute queue** and click **PP-D-41027** (item not received, $186.00, high risk). Switch between the views at the top: *Assigned to me*, *Due in 24 h*, *High risk*.
+3. On the case, read the **AI summary**, then the **Evidence**. Filter it by merchant or buyer; each item is marked *Verified*, *Unverified* or *Contradicts*, and the timeline comes from PayPal.
+4. In **Automatic checks** on the right, see that UPS reports the parcel *delivered and signed for*, while the buyer says it never arrived. **Why it's flagged** shows the buyer's 5 item-not-received claims in 90 days.
+5. Under **Your decision**, click **Ask the buyer**, then **Send through PayPal**. PayPal delivers the request in its Resolution Center, and the case moves to *Waiting for buyer*.
+6. Pick *Rule in favour of the seller* (marked *AI pick*), click **Review and record decision**, then **Confirm decision**. The case is now *Resolved*. Choosing anything other than the AI's pick requires a note.
+7. Open **Account check** and click the example `dh-buyer-3@personal.example.com` under *Try* to see the buyer's account history and what looks unusual. Then open **Flags**, filter by *Delivery*, and open **PP-D-41066** (no carrier scan for 6 days).
+8. Open **Audit log**: your decision and info request are there next to the reminders and flags from the automatic checks.
 
-## What is real and what is simulated
+The sample data lives in the browser. Refreshing the page starts the demo over.
 
-Real in demo mode:
+## What is real and what is sample data
+
+In the hosted demo, every screen, decision, info request and automatic check runs on sample data in the browser (`frontend/src/mock/console.js`). No request is sent to PayPal or to the backend. The names and emails are synthetic sandbox data.
+
+The backend can also be run on its own with simulated PayPal calls (`DEMO_MODE=true`). It isn't connected to the console yet; the routes the console still needs are listed in `docs/FRONTEND_BACKEND_GAPS.md`.
+
+Real in backend demo mode:
 
 - The FastAPI application, database persistence, authentication, sessions, case
-  and approval rules, audit rows, worker logic, frontend rendering, and seeded
-  fixture data.
+  and approval rules, audit rows, worker logic, and seeded fixture data.
 - The mock carrier endpoint and its deterministic tracking patterns.
 - Approval ordering: the Approval and initial AuditLog rows are committed before
   the simulated refund result is recorded.
 
-Simulated in demo mode:
+Simulated in backend demo mode:
 
 - PayPal order reads, dispute reads/listing, and refunds. No PayPal HTTP request
   is made, and simulated responses are marked `simulated: true`.
@@ -42,7 +45,24 @@ Simulated in demo mode:
 
 ## Run it yourself
 
-### Windows PowerShell
+### The console (what the demo uses)
+
+Needs Node.js 20.19+ or 22. No backend, database or `.env` is needed:
+
+```bash
+git clone <REPOSITORY_URL>
+cd potential-Pay-Palling/frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 and follow the three-minute path above.
+
+### The backend on its own (optional)
+
+The steps below run the API with simulated PayPal calls. The console doesn't use it yet.
+
+#### Windows PowerShell
 
 Verified against the repository's `docker-compose.yml`, `backend/alembic.ini`,
 `backend/scripts/seed_demo.py`, `backend/requirements-dev.txt`, and
@@ -79,15 +99,15 @@ In a second PowerShell window, start the frontend:
 
 ```powershell
 cd potential-Pay-Palling\frontend
-Copy-Item .env.example .env
 npm install
 npm run dev
 ```
 
-Set `VITE_API_URL=http://localhost:8000` and `VITE_USE_MOCK=false` in
-`frontend/.env` to use the backend demo.
+Open http://localhost:5173. The console uses its sample data by default.
+`VITE_USE_MOCK=false` (which calls the backend) isn't ready yet; see
+`docs/FRONTEND_BACKEND_GAPS.md`.
 
-### macOS/Linux
+#### macOS/Linux
 
 Verified against the same repository files and scripts:
 
@@ -122,13 +142,12 @@ In a second terminal, start the frontend:
 
 ```bash
 cd potential-Pay-Palling/frontend
-cp .env.example .env
 npm install
 npm run dev
 ```
 
-Set `VITE_API_URL=http://localhost:8000` and `VITE_USE_MOCK=false` in
-`frontend/.env`.
+Open http://localhost:5173. The console uses its sample data by default.
+`VITE_USE_MOCK=false` isn't ready yet; see `docs/FRONTEND_BACKEND_GAPS.md`.
 
 To reset the local synthetic data, run from `backend`:
 
@@ -165,7 +184,7 @@ python -m scripts.reset_demo --yes
 | `ELASTIC_URL` | No | Optional search service URL. |
 | `ELASTIC_API_KEY` | No | Optional search service key. |
 | `VITE_API_URL` | No; defaults to `http://localhost:8000` | Frontend backend URL. |
-| `VITE_USE_MOCK` | No; set to `false` for backend demo | `true` uses frontend-only mock data; `false` calls FastAPI. |
+| `VITE_USE_MOCK` | No; defaults to `true` | `true` uses the frontend's sample data (the demo); `false` calls FastAPI (not ready yet). |
 
 Never put real credentials in this document, a committed `.env`, or a Postman
 export.
@@ -203,8 +222,9 @@ The backend permits the configured origins, not arbitrary browser origins.
 
 ### Free-tier cold start
 
-The hosted Render service may take several seconds to wake after inactivity.
-Retry `/health`, then `/health/ready`, before opening the console. A readiness
+This applies to the API only; the console is a static site and doesn't sleep.
+The hosted API may take several seconds to wake after inactivity.
+Retry `/health`, then `/health/ready`, before calling it. A readiness
 failure means the database probe failed; it is separate from the liveness check.
 
 ## Verification note
