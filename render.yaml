@@ -56,6 +56,26 @@ services:
       - key: DEV_LOGS_MAX_ROWS
         value: "5000"
 
+  # The staff console as a static site. For the demo it runs on the sample data
+  # built into the frontend, so it works without the API above. Static sites
+  # don't sleep on the free plan.
+  - type: web
+    name: guard-pay-console
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_USE_MOCK
+        value: "true"
+    routes:
+      # Single-page app: let React Router handle /queue, /cases/... on refresh
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
 databases:
   - name: dispute-helper-db
     plan: free

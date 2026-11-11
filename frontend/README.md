@@ -1,4 +1,4 @@
-# Dispute Helper: Frontend (staff console)
+# Guard Pay: Frontend (staff console)
 
 React + Vite. A console for **PayPal staff** who resolve disputes. Disputes come in from PayPal; the console shows the AI's summary, flags and suggested resolution, and staff make and log every decision. Everything runs on demo data, so you can click through without a backend.
 

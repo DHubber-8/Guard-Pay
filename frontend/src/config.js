@@ -1,5 +1,5 @@
 // Change the product name here once the team decides. It updates everywhere.
-export const BRAND_NAME = "Dispute Helper";
+export const BRAND_NAME = "Guard Pay";
 export const SUPPORT_EMAIL = "dianakarya88@gmail.com";
 
 // Backend address. Same variable as the original scaffold (frontend/.env).
