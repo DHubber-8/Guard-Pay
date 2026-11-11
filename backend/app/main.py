@@ -20,6 +20,7 @@ from app.routes import (
     approvals,
     auth,
     cases,
+    console,
     order_help,
     personal,
     shipments,
@@ -109,6 +110,7 @@ def create_app(config: Settings = settings) -> FastAPI:
     application.include_router(webhooks.router)
     application.include_router(order_help.router)
     application.include_router(cases.router)
+    application.include_router(console.router)
     application.include_router(approvals.router)
     application.include_router(personal.router)
     application.include_router(shipments.router)
