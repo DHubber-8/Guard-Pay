@@ -49,6 +49,12 @@ services:
         value: "false"
       - key: WORKERS_INTERVAL_SECONDS
         value: "300"
+      - key: DEV_LOGS_ENABLED
+        value: "false"
+      - key: DEV_LOGS_RETENTION_HOURS
+        value: "24"
+      - key: DEV_LOGS_MAX_ROWS
+        value: "5000"
 
 databases:
   - name: dispute-helper-db

@@ -161,6 +161,9 @@ python -m scripts.reset_demo --yes
 | `ADMIN_TOKEN` | Optional | Enables protected demo reseeding and worker execution. |
 | `WORKERS_ENABLED` | No | Enables the background delivery worker loop; defaults to `false`. |
 | `WORKERS_INTERVAL_SECONDS` | No | Background worker interval; defaults to `300`. |
+| `DEV_LOGS_ENABLED` | No; defaults to `false` | Enables the protected `/dev` developer log page and diagnostic storage. |
+| `DEV_LOGS_RETENTION_HOURS` | No; defaults to `24` | Retention window for developer logs. |
+| `DEV_LOGS_MAX_ROWS` | No; defaults to `5000` | Maximum retained developer log rows. |
 | `LLM_API_KEY` | No | Reserved optional integration key; not needed by the demo stub. |
 | `ELASTIC_URL` | No | Optional search service URL. |
 | `ELASTIC_API_KEY` | No | Optional search service key. |
@@ -169,6 +172,15 @@ python -m scripts.reset_demo --yes
 
 Never put real credentials in this document, a committed `.env`, or a Postman
 export.
+
+### Developer logs
+
+Developer logs are disabled by default. For local troubleshooting, set
+`DEV_LOGS_ENABLED=true`, configure a private `ADMIN_TOKEN`, run the latest
+Alembic migration, and open `/dev`. Enter the admin token in the page; it is
+kept in browser memory only. Logs are redacted and automatically pruned, but
+keep the feature off on the hosted demo unless you are actively diagnosing a
+private environment. Never share the admin token or expose `/dev` publicly.
 
 ## Troubleshooting
 

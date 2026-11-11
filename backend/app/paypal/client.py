@@ -15,6 +15,7 @@ from fastapi import Request
 import httpx
 
 from app.config import settings
+from app import devlogs
 
 logger = logging.getLogger(__name__)
 
@@ -71,12 +72,22 @@ class PayPalClient:
                 and time.monotonic() < self._token_expires_at
             ):
                 return self._access_token
-            response = await self.client.post(
-                "/v1/oauth2/token",
-                auth=(self.client_id, self.client_secret),
-                data={"grant_type": "client_credentials"},
-                headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            )
+            started = time.perf_counter()
+            try:
+                response = await self.client.post(
+                    "/v1/oauth2/token",
+                    auth=(self.client_id, self.client_secret),
+                    data={"grant_type": "client_credentials"},
+                    headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                )
+            except Exception as exc:
+                devlogs.record(
+                    "paypal_out", request_id=devlogs.current_request_id(), method="POST",
+                    path="/v1/oauth2/token", duration_ms=(time.perf_counter() - started) * 1000,
+                    message=f"PayPal request failed: {type(exc).__name__}",
+                )
+                raise
+            self._record_outbound(response, started, "/v1/oauth2/token")
             if response.headers.get("PayPal-Debug-Id"):
                 logger.info("PayPal-Debug-Id: %s", response.headers["PayPal-Debug-Id"])
             if response.is_error:
@@ -105,11 +116,23 @@ class PayPalClient:
         retryable_request = method.upper() == "GET" or "PayPal-Request-Id" in headers
         max_retries = 2 if retryable_request else 0
         for attempt in range(max_retries + 1):
-            response = await self.client.request(method, path, headers=headers, **kwargs)
+            started = time.perf_counter()
+            try:
+                response = await self.client.request(method, path, headers=headers, **kwargs)
+            except Exception as exc:
+                devlogs.record(
+                    "paypal_out", request_id=devlogs.current_request_id(), method=method,
+                    path=path, duration_ms=(time.perf_counter() - started) * 1000,
+                    message=f"PayPal request failed: {type(exc).__name__}",
+                )
+                raise
+            self._record_outbound(response, started, path, method)
             if response.status_code == 401:
                 token = await self.fetch_oauth_token(force_refresh=True)
                 headers["Authorization"] = "Bearer " + token
+                started = time.perf_counter()
                 response = await self.client.request(method, path, headers=headers, **kwargs)
+                self._record_outbound(response, started, path, method)
             if response.status_code not in retryable_status or attempt == max_retries:
                 break
             await asyncio.sleep(0.1 * (2**attempt))
@@ -118,6 +141,33 @@ class PayPalClient:
         if response.is_error:
             raise self._error_from_response(response)
         return response
+
+    def _record_outbound(
+        self, response: httpx.Response, started: float, path: str, method: str = "POST"
+    ) -> None:
+        error_name = error_message = None
+        if response.is_error:
+            try:
+                payload = response.json()
+            except ValueError:
+                payload = {}
+            error_name = payload.get("name") if isinstance(payload, dict) else None
+            error_message = (
+                payload.get("message") or payload.get("error_description")
+                if isinstance(payload, dict)
+                else None
+            )
+        devlogs.record(
+            "paypal_out",
+            request_id=devlogs.current_request_id(),
+            method=method,
+            path=path,
+            status=response.status_code,
+            duration_ms=(time.perf_counter() - started) * 1000,
+            paypal_debug_id=response.headers.get("PayPal-Debug-Id"),
+            error_name=error_name,
+            error_message=error_message,
+        )
 
     @staticmethod
     def _error_from_response(response: httpx.Response) -> PayPalError:

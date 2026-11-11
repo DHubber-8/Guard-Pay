@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.models import AuditLog, Case
 from app.db.session import get_db
+from app import devlogs
 from app.paypal.client import PayPalClient, PayPalError, get_paypal
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -39,18 +40,46 @@ async def paypal_webhook(
     client: PayPalClient = Depends(get_paypal),
 ) -> JSONResponse:
     """Verify and record a PayPal webhook event."""
+    event_id = event_type = resource_id = None
+    verified = False
+    duplicate = False
+
+    def log_outcome() -> None:
+        devlogs.record(
+            "paypal_webhook",
+            request_id=devlogs.current_request_id(),
+            method="POST",
+            path="/webhooks/paypal",
+            message="PayPal webhook verification outcome",
+            meta={
+                "event_type": event_type,
+                "event_id": event_id,
+                "resource_id": resource_id,
+                "verified": verified,
+                "duplicate": duplicate,
+            },
+        )
+
     body = await request.body()
-    webhook_id = settings.paypal_webhook_id.strip()
+    config = getattr(request.app.state, "settings", settings)
+    webhook_id = config.paypal_webhook_id.strip()
     if not webhook_id:
         logger.error("PAYPAL_WEBHOOK_ID is empty; refusing PayPal webhook event")
+        log_outcome()
         return JSONResponse({"detail": "PayPal webhook verification is not configured"}, 400)
 
     try:
         event = json.loads(body)
     except (json.JSONDecodeError, UnicodeDecodeError):
+        log_outcome()
         return JSONResponse({"detail": "Invalid JSON payload"}, 400)
     if not isinstance(event, dict):
+        log_outcome()
         return JSONResponse({"detail": "Webhook payload must be a JSON object"}, 400)
+    event_id = event.get("id") if isinstance(event.get("id"), str) else None
+    event_type = event.get("event_type") if isinstance(event.get("event_type"), str) else None
+    raw_resource = event.get("resource")
+    resource_id = _resource_id(raw_resource) if isinstance(raw_resource, dict) else None
 
     verification_payload = {
         "auth_algo": request.headers.get("PAYPAL-AUTH-ALGO", ""),
@@ -70,22 +99,26 @@ async def paypal_webhook(
         verification = verification_response.json()
     except (PayPalError, httpx.HTTPError, ValueError):
         logger.warning("PayPal webhook signature verification request failed")
+        log_outcome()
         return JSONResponse({"detail": "Webhook signature verification failed"}, 400)
     if verification.get("verification_status") != "SUCCESS":
         logger.warning("PayPal webhook signature verification was not successful")
+        log_outcome()
         return JSONResponse({"detail": "Webhook signature verification failed"}, 400)
+    verified = True
 
-    event_id = event.get("id")
-    event_type = event.get("event_type")
     if not isinstance(event_id, str) or not event_id:
+        log_outcome()
         return JSONResponse({"detail": "Webhook event id is required"}, 400)
     if not isinstance(event_type, str) or not event_type:
+        log_outcome()
         return JSONResponse({"detail": "Webhook event type is required"}, 400)
 
     resource = event.get("resource")
     if not isinstance(resource, dict):
         resource = {}
     resource_id = _resource_id(resource)
+    dispute_id = resource_id
     case = None
     if event_type in _DISPUTE_EVENTS:
         dispute_id = resource_id
@@ -124,6 +157,8 @@ async def paypal_webhook(
     except IntegrityError:
         db.rollback()
         if db.query(AuditLog).filter(AuditLog.event_id == event_id).first() is not None:
+            duplicate = True
+            log_outcome()
             return JSONResponse({"status": "received"}, 200)
         if case is None or not dispute_id:
             raise
@@ -155,6 +190,8 @@ async def paypal_webhook(
         except IntegrityError:
             db.rollback()
             if db.query(AuditLog).filter(AuditLog.event_id == event_id).first() is not None:
+                duplicate = True
+                log_outcome()
                 return JSONResponse({"status": "received"}, 200)
             raise
 
@@ -162,6 +199,7 @@ async def paypal_webhook(
         handle_dispute_event(event, db)
     else:
         logger.info("Ignoring unknown PayPal webhook event type: %s", event_type)
+    log_outcome()
     return JSONResponse({"status": "received"}, 200)
 
 def _resource_id(resource: dict[str, Any]) -> str | None:
