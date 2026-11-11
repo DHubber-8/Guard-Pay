@@ -21,7 +21,15 @@ services:
         sync: false
       - key: PAYPAL_WEBHOOK_ID
         sync: false
+      - key: SESSION_SECRET
+        generateValue: true
       - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: DEMO_MODE
+        value: "false"
+      - key: DEMO_MERCHANT_PASSWORD
+        sync: false
+      - key: DEMO_INDIVIDUAL_PASSWORD
         sync: false
       - key: PAYPAL_REPORT_URL
         sync: false
@@ -35,6 +43,38 @@ services:
         sync: false
       - key: ELASTIC_API_KEY
         sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: WORKERS_ENABLED
+        value: "false"
+      - key: WORKERS_INTERVAL_SECONDS
+        value: "300"
+      - key: DEV_LOGS_ENABLED
+        value: "false"
+      - key: DEV_LOGS_RETENTION_HOURS
+        value: "24"
+      - key: DEV_LOGS_MAX_ROWS
+        value: "5000"
+
+  # The staff console as a static site. For the demo it runs on the sample data
+  # built into the frontend, so it works without the API above. Static sites
+  # don't sleep on the free plan.
+  - type: web
+    name: guard-pay-console
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_USE_MOCK
+        value: "true"
+    routes:
+      # Single-page app: let React Router handle /queue, /cases/... on refresh
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 databases:
   - name: dispute-helper-db

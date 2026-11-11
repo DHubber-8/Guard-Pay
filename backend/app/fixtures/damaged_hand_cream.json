@@ -1,0 +1,35 @@
+{
+  "fixture_id": "damaged-hand-cream",
+  "scenario": "item_not_as_described_damaged",
+  "seller": "Glow Haven Beauty",
+  "item": "Velvet Repair Hand Cream, 2 L Salon Pump Refill",
+  "amount": "25.00",
+  "currency": "USD",
+  "paypal_order_id": "DEMO-DAMAGED-HAND-CREAM",
+  "tracking_number": "DEMO-DELIVERED-001",
+  "carrier": "DEMO_CARRIER",
+  "delivery_day": 4,
+  "reported_hours_after_delivery": 3,
+  "buyer_chat": [
+    {"speaker": "buyer", "text": "My hand cream arrived damaged."},
+    {"speaker": "seller", "text": "I am sorry to hear that."},
+    {"speaker": "buyer", "text": "The pump is cracked and leaking."},
+    {"speaker": "seller", "text": "Can you send a photo?"},
+    {"speaker": "buyer", "text": "Yes, I have attached photos."},
+    {"speaker": "seller", "text": "We can review a return or replacement."}
+  ],
+  "seller_return_policy": "Damaged items may be returned within 14 days with photos of the item and packaging.",
+  "photo_descriptions": [
+    "Cracked pump neck on the salon refill bottle.",
+    "Cream residue visible around the broken pump.",
+    "Shipping box corner is visibly crushed.",
+    "Product label matches the ordered item."
+  ],
+  "evidence": [
+    {"description": "PayPal sandbox order and payment record.", "source": "paypal", "verified": true},
+    {"description": "Carrier record shows delivery on Day 4.", "source": "carrier", "verified": true},
+    {"description": "Buyer and seller six-message chat transcript.", "source": "buyer_chat", "verified": false},
+    {"description": "Seller return-policy excerpt.", "source": "seller_policy", "verified": false},
+    {"description": "Four buyer-provided damage photo descriptions.", "source": "buyer_photo", "verified": false}
+  ]
+}

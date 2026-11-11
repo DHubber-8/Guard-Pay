@@ -10,6 +10,7 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/console.css";
 
 ModuleRegistry.registerModules([AllCommunityModule]); // needed once for AG Grid
 

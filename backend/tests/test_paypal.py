@@ -6,6 +6,7 @@ Status: in progress
 
 import httpx
 import pytest
+import asyncio
 
 from app.paypal.client import PayPalClient, PayPalError
 from app.paypal.orders import get_order
@@ -32,6 +33,78 @@ async def test_token_fetch_is_cached() -> None:
     assert await client.fetch_oauth_token() == "token"
     assert await client.fetch_oauth_token() == "token"
     assert len(calls) == 1
+    await client.aclose()
+
+
+@pytest.mark.anyio
+async def test_concurrent_token_refresh_happens_once() -> None:
+    token_calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal token_calls
+        token_calls += 1
+        await asyncio.sleep(0.01)
+        return httpx.Response(200, json={"access_token": "token", "expires_in": 3600})
+
+    client = PayPalClient(
+        base_url="https://sandbox.test",
+        client_id="id",
+        client_secret="secret",
+        transport=paypal_transport(handler),
+    )
+    assert await asyncio.gather(*(client.fetch_oauth_token() for _ in range(10))) == [
+        "token"
+    ] * 10
+    assert token_calls == 1
+    await client.aclose()
+
+
+@pytest.mark.anyio
+async def test_get_retries_twice_on_server_error() -> None:
+    api_calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal api_calls
+        if request.url.path.endswith("/oauth2/token"):
+            return httpx.Response(200, json={"access_token": "token", "expires_in": 3600})
+        api_calls += 1
+        if api_calls < 3:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"ok": True})
+
+    client = PayPalClient(
+        base_url="https://sandbox.test",
+        client_id="id",
+        client_secret="secret",
+        transport=paypal_transport(handler),
+    )
+    response = await client.request("GET", "/v2/checkout/orders/123")
+    assert response.json() == {"ok": True}
+    assert api_calls == 3
+    await client.aclose()
+
+
+@pytest.mark.anyio
+async def test_plain_post_is_not_retried_on_server_error() -> None:
+    api_calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal api_calls
+        if request.url.path.endswith("/oauth2/token"):
+            return httpx.Response(200, json={"access_token": "token", "expires_in": 3600})
+        api_calls += 1
+        return httpx.Response(503)
+
+    client = PayPalClient(
+        base_url="https://sandbox.test",
+        client_id="id",
+        client_secret="secret",
+        transport=paypal_transport(handler),
+    )
+    with pytest.raises(PayPalError) as exc_info:
+        await client.request("POST", "/v2/notifications/test", json={"value": 1})
+    assert exc_info.value.status == 503
+    assert api_calls == 1
     await client.aclose()
 
 

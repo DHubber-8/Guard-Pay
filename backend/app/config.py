@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     carrier_api_base_url: str = ""
     elastic_url: str = ""
     elastic_api_key: str = ""
+    session_secret: str = ""
+    session_ttl_seconds: int = 86400
+    demo_merchant_password: str = ""
+    demo_individual_password: str = ""
+    admin_token: str = ""
+    workers_enabled: bool = False
+    workers_interval_seconds: int = 300
+    demo_mode: bool = False
+    dev_logs_enabled: bool = False
+    dev_logs_retention_hours: int = 24
+    dev_logs_max_rows: int = 5000
 
     @property
     def frontend_origins(self) -> list[str]:
