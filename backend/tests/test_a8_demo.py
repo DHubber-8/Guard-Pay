@@ -17,7 +17,7 @@ from app.main import create_app
 from app.mocks.carrier import tracking_status
 from app.config import Settings
 from scripts.reset_demo import validate_reset_target
-from scripts.seed_demo import FIXTURE_DIR, FIXTURE_NAMES, seed_demo
+from scripts.seed_demo import FIXTURE_DIR, FIXTURE_NAMES, is_local_database_url, seed_demo
 
 
 @pytest.mark.parametrize(
@@ -97,3 +97,7 @@ def test_reset_refuses_production_and_remote_targets() -> None:
                 ),
             )
         )
+
+
+def test_compose_database_hostname_is_local() -> None:
+    assert is_local_database_url("postgresql://user:pass@db:5432/demo")

@@ -1,9 +1,3 @@
-"""Seed synthetic fixture data into the local database only.
-
-Owner: Digant
-Status: in progress
-"""
-
 from __future__ import annotations
 
 import json
@@ -182,7 +176,7 @@ def seed_demo_user(db: Session, email: str, name: str, role: str, password: str)
 def is_local_database_url(database_url: str) -> bool:
     if not database_url or database_url.startswith("sqlite"):
         return True
-    return urlsplit(database_url).hostname in {"localhost", "127.0.0.1", "::1"}
+    return urlsplit(database_url).hostname in {"localhost", "127.0.0.1", "::1", "db"}
 
 
 def seed_demo(db: Session | None = None, config: Settings = settings) -> int:
