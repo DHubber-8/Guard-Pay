@@ -7,7 +7,7 @@ Guard Pay is a staff console for reviewing PayPal disputes, evidence, delivery s
 
 ## Quick start
 
-### A. Console only (fastest judge path)
+### A. Console only
 
 This path needs Node.js 20.19+ or 22. It uses the sample data bundled in the browser: no backend, database, credentials, or `.env` file is needed.
 
