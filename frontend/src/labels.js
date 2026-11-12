@@ -37,18 +37,3 @@ export const due = (h) => {
   const d = Math.round(h / 24);
   return `${d} day${d === 1 ? "" : "s"}`;
 };
-
-// Scenario ids from the analysis pipeline (backend/app/rules/scenarios.py)
-export const SCENARIO_LABEL = {
-  item_not_received: "Item not received",
-  item_not_as_described: "Item not as described",
-  unauthorized_purchase: "Unauthorized purchase",
-  refund_abuse: "Refund abuse",
-  own_evidence_check: "Own evidence check",
-};
-
-// "shipment_status" -> "Shipment status"
-export const humanize = (key = "") => {
-  const s = String(key).replace(/_/g, " ").trim();
-  return s.charAt(0).toUpperCase() + s.slice(1);
-};
