@@ -11,6 +11,7 @@
 // or merchant through PayPal, never directly.
 import { USE_MOCK, API_URL } from "../config";
 import * as mock from "../mock/console";
+import { toAnalysisView } from "./analysisAdapter";
 
 export async function http(path, { method = "GET", body } = {}) {
   const res = await fetch(`${API_URL}${path}`, {
@@ -145,6 +146,14 @@ const mockApi = {
 
 /* ---------- Real backend ---------- */
 const realApi = {
+      analyzeCase: async (id) => {
+    const result = await http(
+      `/cases/${encodeURIComponent(id)}/analyze`,
+      { method: "POST" }
+    );
+
+    return toAnalysisView(result);
+  },
   // Backend: GET /cases, GET /cases/{id}  (stubs today)
   getCases: async () => (await http("/cases")).map(toQueueRow),
   getCase: async (id) => toCaseDetail(await http(`/cases/${encodeURIComponent(id)}`)),
