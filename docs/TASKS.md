@@ -7,7 +7,7 @@ Priority: Must / Should / Nice.
 | ID | Area | Task | Files | Depends on | Priority | Status | Owner | Approved by |
 |---|---|---|---|---|---|---|---|---|
 | S1 | Shared | Define findings schema and API contract | schemas/findings.py | none | Must | Done | TBD | |
-| S2 | Shared | Define merchant and personal scenario catalog | rules/scenarios.py | none | Must | Pending | TBD | |
+| S2 | Shared | Define merchant and personal scenario catalog | rules/scenarios.py | none | Must | Done | Shu Jing | |
 | A1 | A | Configure PayPal sandbox and order lookup | config.py, paypal/ | none | Must | Done | Digant | |
 | A2 | A | Add verified webhook receiver | routes/webhooks.py | A1 | Must | Done | Digant | |
 | A3 | A | Add dispute API wrapper | paypal/disputes.py | A1 | Must | Done | Digant | |
@@ -17,14 +17,14 @@ Priority: Must / Should / Nice.
 | A7 | A | Add delivery watch and deadline workers | workers/ | A5, A8 | Should | Done | Digant | |
 | A8 | A | Add mock carrier, fixtures, and scripts | mocks/, data/, scripts/ | none | Must | Done | Digant | |
 | A9 | A | Add Render and Docker deployment setup | render.yaml, docker-compose.yml | none | Must | Done | Digant | |
-| B1 | B | Classify scenarios | agents/classifier.py | S2 | Must | Pending | TBD | |
-| B2 | B | Add explainers and personal advisor | agents/ | S1 | Must | Pending | TBD | |
+| B1 | B | Classify scenarios | agents/classifier.py | S2 | Must | Done | Shu Jing | |
+| B2 | B | Add explainers and personal advisor | agents/ | S1 | Must | Done | Shu Jing | |
 | B3 | B | Add evidence rules and document reader | rules/evidence.py, agents/doc_reader.py | S2 | Must | Pending | TBD | |
 | B4 | B | Add merchant and personal risk rules | rules/ | S2 | Should | Pending | TBD | |
-| B5 | B | Combine risk and evidence status | rules/assessment.py | S1 | Must | Pending | TBD | |
-| B6 | B | Add approval policy and audit logging | rules/approval_policy.py | A5 | Must | Done | Digant | |
-| B7 | B | Draft dispute responses | agents/drafter.py | S1 | Must | Pending | TBD | |
-| B8 | B | Wire the shared pipeline | pipeline.py | B1, B3, B4, B5 | Must | Pending | TBD | |
+| B5 | B | Combine risk and evidence status | rules/assessment.py | S1 | Must | Done | Shu Jing | |
+| B6 | B | Add approval policy and audit logging | rules/approval_policy.py | A5 | Must | Done | Shu Jing | |
+| B7 | B | Draft dispute responses | agents/drafter.py | S1 | Must | Done | Shu Jing | |
+| B8 | B | Wire the shared pipeline | pipeline.py | B1, B3, B4, B5 | Must | Done | Shu Jing | |
 | B9 | B | Add optional similar-case search | search/ | A5 | Nice | Pending | TBD | |
 | C1 | C | App shell, routing, API client (superseded by C7) | frontend/src | S1 | Must | Done | Diana | |
 | C2-C6 | C | Merchant, buyer and personal screens (removed in C7: product now serves PayPal staff) | pages/ | C1 | - | Done | Diana | |

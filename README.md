@@ -139,18 +139,20 @@ Requests for more information are intended to go to the buyer or merchant throug
 
 ## How we use AI
 
-No AI model is called today. The current implementation uses deterministic rules and sample findings to provide decision support:
+Guard Pay's backend has an analysis pipeline, but the normal API flow currently uses deterministic code rather than a model:
 
-- Backend rule modules evaluate risk, evidence, assessments, approval policy, personal checks, and auto-approval behavior.
-- The frontend sample data displays summaries, flags, recommended actions, and an “AI pick” label.
-- Approval gating requires a human approver for money-moving or other consequential actions, and decisions are written to the audit log.
-- The hosted console's cases, account checks, flags, insights, and recommendations are sample data from [`frontend/src/mock/console.js`](frontend/src/mock/console.js).
+- `backend/app/agents/classifier.py` uses an explicit scenario or conservative keyword matching to classify a case.
+- `backend/app/rules/scenarios.py` provides merchant and personal scenario catalogs, required evidence, optional evidence, and indicator definitions.
+- `backend/app/rules/evidence.py` computes evidence completeness; `risk.py` computes a heuristic warning score from explicitly supplied indicator IDs. The score is not a calibrated probability or fraud verdict.
+- `backend/app/agents/explainer.py` produces a fact-grounded explanation, `personal_advisor.py` provides safety steps, and `drafter.py` creates a human-reviewed merchant response draft. These are templates and deterministic functions, not generative model output.
+- `backend/app/pipeline.py` combines classification, evidence, risk, assessment, explanations, and findings. It is pure analysis: it does not contact PayPal, change the database, or submit a decision.
+- Merchant case analysis currently calls the pipeline with `use_ai=False` in [`backend/app/routes/cases.py`](backend/app/routes/cases.py). Personal checks use the conservative keyword analyzer in [`backend/app/personal_stub.py`](backend/app/personal_stub.py).
 
-Guardrails from [`docs/RULES.md`](docs/RULES.md): recommendations only; a human approves every action; the system does not issue fraud verdicts; and it does not show confidence percentages. Risk and evidence status remain separate, and choosing a non-recommended action requires a note.
+There is an optional OpenAI-compatible gateway in [`backend/app/agents/ai_gateway.py`](backend/app/agents/ai_gateway.py). It is disabled by default and is not used by the current merchant analysis route. It would only make a request when `B_AI_ENABLED=1`, `B_AI_BASE_URL`, `B_AI_API_KEY`, and `B_AI_MODEL` are all set; the gateway sends a reduced explanation summary rather than raw case records and applies a prompt against invented evidence, fraud verdicts, and automatic financial recommendations. The current repository does not specify or call a production model.
 
-> **TODO: real AI step**
->
-> If a model is added, document the exact model/provider here and describe its role, inputs, outputs, and evaluation boundary. Do not describe a model as active until the code calls it.
+The hosted frontend's summaries, flags, recommendations, and “AI pick” labels are sample data from [`frontend/src/mock/console.js`](frontend/src/mock/console.js). They demonstrate decision-support wording; they are not evidence of a live AI service.
+
+Guardrails from [`docs/RULES.md`](docs/RULES.md): recommendations only; a human approves every consequential action; no fraud verdicts; no confidence percentages; risk and evidence status remain separate; and a non-recommended action requires a note. Approval and audit routes enforce the human decision boundary before money-moving actions.
 
 ## Tech stack and tools
 
