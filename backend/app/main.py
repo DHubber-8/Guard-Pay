@@ -24,6 +24,7 @@ from app.routes import (
     approvals,
     auth,
     cases,
+    demo_analysis,
     dev,
     console,
     order_help,
@@ -194,6 +195,7 @@ def create_app(config: Settings = settings) -> FastAPI:
     application.include_router(webhooks.router)
     application.include_router(order_help.router)
     application.include_router(cases.router)
+    application.include_router(demo_analysis.router)
     application.include_router(dev.router)
     application.include_router(console.router)
     application.include_router(approvals.router)
