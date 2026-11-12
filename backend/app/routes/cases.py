@@ -18,6 +18,7 @@ from app.schemas.findings import Findings
 from app.pipeline import analyze_case
 from app.paypal.disputes import get_dispute
 from app.rules.paypal_reason_mapping import map_paypal_reason
+from app.rules.stored_evidence_adapter import adapt_stored_evidence
 
 router = APIRouter(
     prefix="/cases",
@@ -192,7 +193,7 @@ async def analyze_merchant_case(
             detail="Unable to identify a supported dispute scenario",
         )
 
-    evidence = {}
+    evidence = adapt_stored_evidence(case.evidence_items)
 
     if dispute is not None:
         if dispute.disputed_transactions:
