@@ -2,14 +2,13 @@
 // and flags, and the staff decision. Follows docs/RULES.md: the AI only
 // recommends, every decision is made and logged by a person, and risk is shown
 // separately from evidence status.
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Sparkles, TriangleAlert, Flag, Send, Gavel, UserCheck, ScrollText, Search, Radar, Truck, Clock, ScanSearch } from "lucide-react";
+import { ChevronRight, Sparkles, TriangleAlert, Flag, Send, Gavel, UserCheck, ScrollText, Search, Radar, Truck, Clock } from "lucide-react";
 import { api } from "../../api";
 import { Button, Card, Badge, RiskBadge, KV, Modal, RadioCard, Notice, Skeleton, Textarea, Chips, useToast } from "../../components/ui";
 import { EvidenceBadge } from "../../components/FindingsPanel";
-import AnalysisPanel from "../../components/AnalysisPanel";
 import { REASON_LABEL, ASSESSMENT, STAFF, DELIVERY, money, due } from "../../labels";
 import { useStaff } from "../../session";
 
@@ -72,14 +71,6 @@ function AutoChecks({ c, resolved }) {
   );
 }
 
-// Why an analysis run failed, in words staff can act on
-function analysisError(err) {
-  if (err?.status === 422) return "This case doesn't match a supported dispute scenario yet, so it can't be analyzed.";
-  if (err?.status === 404) return "The backend couldn't find this case.";
-  if (err?.status === 502) return "PayPal didn't return the dispute details. Try again in a moment.";
-  return "The analysis didn't run. Nothing was changed. Try again in a moment.";
-}
-
 export default function CaseView() {
   const { id } = useParams();
   const staff = useStaff();
@@ -115,12 +106,6 @@ export default function CaseView() {
     onError: () => showToast("Couldn't send the request · try again"),
   });
   const assign = useMutation({ mutationFn: () => api.assign(id, staff.id), onSuccess: () => { refresh(); showToast("Assigned to you"); } });
-  // Case analysis (POST /cases/{id}/analyze). The backend needs its numeric case id,
-  // so use c.dbId when the adapter provides it. Read-only: it changes nothing.
-  const canAnalyze = typeof api.analyzeCase === "function";
-  const analysis = useMutation({ mutationFn: () => api.analyzeCase(c?.dbId ?? id) });
-  const resetAnalysis = analysis.reset;
-  useEffect(() => { resetAnalysis(); }, [id, resetAnalysis]);
 
   if (isError) {
     return (
@@ -172,21 +157,6 @@ export default function CaseView() {
             <p style={{ fontSize: 16 }}>{c.summary}</p>
             <p className="small muted">Decision support based on PayPal records. It is not proof of fraud.</p>
           </Card>
-
-          {canAnalyze && (
-            <Card>
-              <div className="row between wrap gap-8">
-                <div className="row gap-8"><ScanSearch size={18} color="var(--blue-600)" /><h2 className="h3">Case analysis</h2></div>
-                <Button size="sm" kind={analysis.data ? "secondary" : "primary"} onClick={() => analysis.mutate()} disabled={analysis.isPending}>
-                  {analysis.isPending ? "Analyzing…" : analysis.data ? "Run again" : "Run analysis"}
-                </Button>
-              </div>
-              {analysis.isPending ? <Skeleton h={140} />
-                : analysis.isError ? <Notice tone="danger" icon={TriangleAlert}>{analysisError(analysis.error)}</Notice>
-                : analysis.data ? <AnalysisPanel result={analysis.data} />
-                : <p className="small text-2">Checks this case against its dispute scenario: which required evidence is there, which warning signs apply, and a suggested next step. It only reads data and changes nothing.</p>}
-            </Card>
-          )}
 
           <Card>
             <div className="row between wrap gap-8"><h2 className="h3">Evidence</h2><span className="small muted">{c.evidence.filter((e) => e.kind === "verified").length} of {c.evidence.length} verified</span></div>
