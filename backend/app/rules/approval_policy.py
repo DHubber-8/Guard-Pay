@@ -1,6 +1,7 @@
-"""Validation rules for explicit case decisions."""
+"""Human approval and offer validation rules."""
 
 from __future__ import annotations
+
 
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Literal
@@ -31,3 +32,18 @@ def validate_offer(offer: OfferType, amount: str | None, case_amount: Decimal) -
     if normalized > case_amount:
         raise ValueError("partial amount cannot exceed the case amount")
     return normalized
+
+
+
+def requires_human_approval(action: str) -> bool:
+    """Require human approval for external or money-moving actions."""
+    return action in {
+        "refund",
+        "offer",
+        "submit_evidence",
+        "send_response",
+        "cancel",
+        "capture",
+        "sign",
+        "confirm",
+    }
